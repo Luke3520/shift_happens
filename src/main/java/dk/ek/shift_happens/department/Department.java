@@ -9,12 +9,12 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "Department", schema = "shift_happens") // use exact table name and schema
+@Table(name = "department") // use exact table name and schema
 public class Department {
 
     @Id
     @Column(name = "department_id")
-    private Long department_id;
+    private Integer department_id;
     @Column(name = "department_name")
     private String department_name;
     @Column(name = "is_active")
