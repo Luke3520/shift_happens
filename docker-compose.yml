@@ -17,6 +17,24 @@ services:
       timeout: 5s
       retries: 5
 
+  mongo:
+    image: mongo:7.0
+    container_name: shift-happens-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+    volumes:
+      - mongo-data:/data/db
+      - ./docker/mongo-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "mongodb://localhost:27017/admin", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   app:
     build: .
     container_name: shift-happens-app
@@ -26,9 +44,17 @@ services:
       DB_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE}
       DB_USERNAME: ${LOCAL_DB_USERNAME}
       DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MONGO_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/${MONGO_DATABASE}?authSource=admin
+      MONGO_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      APP_STORAGE: ${APP_STORAGE:-mysql}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-mysql}
     depends_on:
       db:
+        condition: service_healthy
+      mongo:
         condition: service_healthy
 
 volumes:
   db-data:
+  mongo-data:

@@ -1,25 +1,31 @@
 package dk.ek.shift_happens.department;
-import lombok.Getter;
-import lombok.Setter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@Getter
-@Setter
 @RestController
 @RequestMapping( "/departments")
 public class DepartmentController {
 
-    private final DepartmentRepository DepartmentRepository;
+    private final DepartmentRepository departmentRepository;
+    private final DepartmentMongoRepository departmentMongoRepository;
 
-    public DepartmentController(DepartmentRepository departmentRepository) {
-        this.DepartmentRepository = departmentRepository;
+    @Value("${app.storage:mysql}")
+    private String storageType;
+
+    public DepartmentController(DepartmentRepository departmentRepository, DepartmentMongoRepository departmentMongoRepository) {
+        this.departmentRepository = departmentRepository;
+        this.departmentMongoRepository = departmentMongoRepository;
     }
+
     @GetMapping
-    public List<Department> getDepartments() {
-        return this.DepartmentRepository.findAll();
+    public List<?> getDepartments() {
+        if ("mongo".equalsIgnoreCase(storageType)) {
+            return this.departmentMongoRepository.findAll();
+        }
+        return this.departmentRepository.findAll();
     }
 }
