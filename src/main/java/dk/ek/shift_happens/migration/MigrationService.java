@@ -46,10 +46,6 @@ import dk.ek.shift_happens.shiftswap.ShiftSwap;
 import dk.ek.shift_happens.shiftswap.ShiftSwapRepository;
 import dk.ek.shift_happens.shiftswapapproval.ShiftSwapApproval;
 import dk.ek.shift_happens.shiftswapapproval.ShiftSwapApprovalRepository;
-import dk.ek.shift_happens.userrole.UserRole;
-import dk.ek.shift_happens.userrole.UserRoleRepository;
-import dk.ek.shift_happens.userrole.mongo.UserRoleDocument;
-import dk.ek.shift_happens.userrole.mongo.UserRoleMongoRepository;
 import dk.ek.shift_happens.worklocation.WorkLocation;
 import dk.ek.shift_happens.worklocation.WorkLocationRepository;
 import dk.ek.shift_happens.worklocation.mongo.WorkLocationDocument;
@@ -81,7 +77,6 @@ public class MigrationService {
     private final EmployeeJobRoleRepository employeeJobRoleRepository;
     private final JobRoleRepository jobRoleRepository;
     private final WorkLocationRepository workLocationRepository;
-    private final UserRoleRepository userRoleRepository;
     private final DepartmentRepository departmentRepository;
     private final ShiftRepository shiftRepository;
     private final ShiftRequiredJobRoleRepository shiftRequiredJobRoleRepository;
@@ -102,7 +97,6 @@ public class MigrationService {
     private final LeaveMongoRepository leaveMongoRepository;
     private final JobRoleMongoRepository jobRoleMongoRepository;
     private final WorkLocationMongoRepository workLocationMongoRepository;
-    private final UserRoleMongoRepository userRoleMongoRepository;
     private final LeaveTypeMongoRepository leaveTypeMongoRepository;
 
     // Neo4j migration orchestration
@@ -130,19 +124,16 @@ public class MigrationService {
 
     public MigrationResult migrateToMongo() {
         List<String> errors = new ArrayList<>();
-        int auditLogs = 0, employees = 0, shifts = 0, departments = 0, leave = 0;
-
-        try { auditLogs   = migrateAuditLogsToMongo(); }    catch (Exception e) { log.error("mongo:audit_logs failed",     e); errors.add("mongo:audit_logs — "     + e.getMessage()); }
-        try { employees   = migrateEmployeesToMongo(); }    catch (Exception e) { log.error("mongo:employees failed",      e); errors.add("mongo:employees — "      + e.getMessage()); }
-        try { shifts      = migrateShiftsToMongo(); }       catch (Exception e) { log.error("mongo:shifts failed",         e); errors.add("mongo:shifts — "         + e.getMessage()); }
-        try { departments = migrateDepartmentsToMongo(); }  catch (Exception e) { log.error("mongo:departments failed",    e); errors.add("mongo:departments — "    + e.getMessage()); }
-        try { leave       = migrateLeaveToMongo(); }        catch (Exception e) { log.error("mongo:leave failed",          e); errors.add("mongo:leave — "          + e.getMessage()); }
-        try { migrateJobRolesToMongo(); }                   catch (Exception e) { log.error("mongo:job_roles failed",      e); errors.add("mongo:job_roles — "      + e.getMessage()); }
-        try { migrateWorkLocationsToMongo(); }              catch (Exception e) { log.error("mongo:work_locations failed", e); errors.add("mongo:work_locations — " + e.getMessage()); }
-        try { migrateUserRolesToMongo(); }                  catch (Exception e) { log.error("mongo:user_roles failed",     e); errors.add("mongo:user_roles — "     + e.getMessage()); }
-        try { migrateLeaveTypesToMongo(); }                 catch (Exception e) { log.error("mongo:leave_types failed",    e); errors.add("mongo:leave_types — "    + e.getMessage()); }
-
-        return new MigrationResult(employees, shifts, departments, leave, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, errors);
+        int employees = 0, shifts = 0, departments = 0, leave = 0, audit_logs = 0;
+        try { audit_logs   = migrateAuditLogsToMongo(); }   catch (Exception e) { log.error("mongo:audit_logs failed",   e); errors.add("mongo:audit_logs — "   + e.getMessage()); }
+        try { employees   = migrateEmployeesToMongo(); }   catch (Exception e) { log.error("mongo:employees failed",   e); errors.add("mongo:employees — "   + e.getMessage()); }
+        try { shifts      = migrateShiftsToMongo(); }      catch (Exception e) { log.error("mongo:shifts failed",      e); errors.add("mongo:shifts — "      + e.getMessage()); }
+        try { departments = migrateDepartmentsToMongo(); } catch (Exception e) { log.error("mongo:departments failed", e); errors.add("mongo:departments — " + e.getMessage()); }
+        try { leave       = migrateLeaveToMongo(); }       catch (Exception e) { log.error("mongo:leave failed",       e); errors.add("mongo:leave — "       + e.getMessage()); }
+        try { migrateJobRolesToMongo(); }      catch (Exception e) { log.error("mongo:job_roles failed",      e); errors.add("mongo:job_roles — "      + e.getMessage()); }
+        try { migrateWorkLocationsToMongo(); } catch (Exception e) { log.error("mongo:work_locations failed", e); errors.add("mongo:work_locations — " + e.getMessage()); }
+        try { migrateLeaveTypesToMongo(); }    catch (Exception e) { log.error("mongo:leave_types failed",    e); errors.add("mongo:leave_types — "    + e.getMessage()); }
+        return new MigrationResult(audit_logs, employees, shifts, departments, leave, 0, 0, 0, 0, 0, errors);
     }
 
     public MigrationResult migrateToNeo4j() {
@@ -169,7 +160,7 @@ public class MigrationService {
         Map<Integer, Employee>   allEmployees  = index(employeeRepository.findAll(), Employee::getEmployeeId);
         Map<Integer, Department> departments   = index(departmentRepository.findAll(), Department::getDepartmentId);
         Map<Integer, WorkLocation> locations   = index(workLocationRepository.findAll(), WorkLocation::getWorkLocationId);
-        Map<Integer, UserRole> userRoles       = index(userRoleRepository.findAll(), UserRole::getUserRoleId);
+        //Map<Integer, UserRole> userRoles       = index(userRoleRepository.findAll(), UserRole::getUserRoleId);
         Map<Integer, JobRole> jobRoles         = index(jobRoleRepository.findAll(), JobRole::getJobRoleId);
 
         Map<Integer, List<EmployeeContract>> contractsByEmployee =
@@ -195,7 +186,7 @@ public class MigrationService {
         employeeMongoRepository.deleteAll();
 
         List<EmployeeDocument> docs = allEmployees.values().stream()
-                .map(e -> toEmployeeDocument(e, departments, locations, userRoles, jobRoles,
+                .map(e -> toEmployeeDocument(e, departments, locations, jobRoles,
                         contractsByEmployee, rolesByEmployee, leaveRequestsByEmployee, leaveApprovalsByRequest,
                         leaveLedgerByEmployee, allEmployees))
                 .toList();
@@ -290,15 +281,6 @@ public class MigrationService {
         return docs.size();
     }
 
-    public int migrateUserRolesToMongo() {
-        userRoleMongoRepository.deleteAll();
-        List<UserRoleDocument> docs = userRoleRepository.findAll().stream()
-                .map(this::toUserRoleDocument)
-                .toList();
-        userRoleMongoRepository.saveAll(docs);
-        return docs.size();
-    }
-
     public int migrateLeaveTypesToMongo() {
         leaveTypeMongoRepository.deleteAll();
         List<LeaveTypeDocument> docs = leaveTypeRepository.findAll().stream()
@@ -328,7 +310,6 @@ public class MigrationService {
             Employee e,
             Map<Integer, Department> departments,
             Map<Integer, WorkLocation> locations,
-            Map<Integer, UserRole> userRoles,
             Map<Integer, JobRole> jobRoles,
             Map<Integer, List<EmployeeContract>> contractsByEmployee,
             Map<Integer, List<EmployeeJobRole>> rolesByEmployee,
@@ -347,6 +328,7 @@ public class MigrationService {
         doc.setPhoneNumber(e.getPhoneNumber());
         doc.setHireDate(e.getHireDate());
         doc.setEmploymentStatus(e.getEmploymentStatus());
+        doc.setUserRole(e.getUserRole() != null ? e.getUserRole().getRoleName() : null);
 
         // Work Location
         WorkLocation loc = locations.get(e.getPrimaryWorkLocationId());
@@ -355,15 +337,6 @@ public class MigrationService {
             wl.setWorkLocationId(loc.getWorkLocationId());
             wl.setLocationName(loc.getLocationName());
             doc.setPrimaryWorkLocation(wl);
-        }
-
-        // User Role
-        UserRole ur = userRoles.get(e.getFkUserRoleId());
-        if (ur != null) {
-            EmployeeDocument.UserRole role = new EmployeeDocument.UserRole();
-            role.setRoleId(ur.getUserRoleId());
-            role.setRoleName(ur.getUserRoleName());
-            doc.setUserRole(role);
         }
 
         // Contracts
@@ -623,13 +596,6 @@ public class MigrationService {
         return doc;
     }
 
-    private UserRoleDocument toUserRoleDocument(UserRole ur) {
-        UserRoleDocument doc = new UserRoleDocument();
-        doc.setUserRoleId(ur.getUserRoleId());
-        doc.setUserRoleName(ur.getUserRoleName());
-        return doc;
-    }
-
     private LeaveTypeDocument toLeaveTypeDocument(LeaveType lt) {
         LeaveTypeDocument doc = new LeaveTypeDocument();
         doc.setLeaveTypeId(lt.getLeaveTypeId());
@@ -679,6 +645,63 @@ public class MigrationService {
             return ref;
         }).toList());
         return doc;
+    }
+
+    // -------------------------------------------------------------------------
+    // Mappers — Neo4j
+    // -------------------------------------------------------------------------
+
+    private EmployeeNode toEmployeeNode(Employee e) {
+        EmployeeNode node = new EmployeeNode();
+        node.setEmployeeId(e.getEmployeeId());
+        node.setEmployeeNumber(e.getEmployeeNumber());
+        node.setFirstName(e.getFirstName());
+        node.setLastName(e.getLastName());
+        node.setEmail(e.getEmail());
+        node.setUserRole(e.getUserRole() != null ? e.getUserRole().getRoleName() : null);
+        node.setPhoneNumber(e.getPhoneNumber());
+        node.setHireDate(e.getHireDate());
+        node.setEmploymentStatus(e.getEmploymentStatus());
+        node.setPrimaryWorkLocationId(e.getPrimaryWorkLocationId());
+        return node;
+    }
+
+    private DepartmentNode toDepartmentNode(Department d) {
+        DepartmentNode node = new DepartmentNode();
+        node.setDepartmentId(d.getDepartmentId());
+        node.setDepartmentName(d.getDepartmentName());
+        node.setIsActive(d.getIsActive());
+        return node;
+    }
+
+    private WorkLocationNode toWorkLocationNode(WorkLocation w) {
+        WorkLocationNode node = new WorkLocationNode();
+        node.setWorkLocationId(w.getWorkLocationId());
+        node.setLocationName(w.getLocationName());
+        node.setCity(w.getCity());
+        node.setCountry(w.getCountry());
+        node.setTimezone(w.getTimezone());
+        node.setIsActive(w.getIsActive());
+        return node;
+    }
+
+    private ShiftNode toShiftNode(Shift s) {
+        ShiftNode node = new ShiftNode();
+        node.setShiftId(s.getShiftId());
+        node.setShiftName(s.getShiftName());
+        node.setStartDatetime(s.getStartDatetime());
+        node.setEndDatetime(s.getEndDatetime());
+        node.setShiftStatus(s.getShiftStatus());
+        return node;
+    }
+
+    private JobRoleNode toJobRoleNode(JobRole jr) {
+        JobRoleNode node = new JobRoleNode();
+        node.setJobRoleId(jr.getJobRoleId());
+        node.setRoleName(jr.getRoleName());
+        node.setJobRoleDescription(jr.getJobRoleDescription());
+        node.setIsCertificationRequired(jr.getIsCertificationRequired());
+        return node;
     }
 
     // -------------------------------------------------------------------------
