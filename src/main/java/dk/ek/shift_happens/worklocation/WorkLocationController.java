@@ -17,37 +17,38 @@ public class WorkLocationController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public List<WorkLocation> getAll() {
-        return workLocationRepository.findAll();
+    public List<WorkLocationDto> getAll() {
+        return workLocationRepository.findAll().stream().map(WorkLocationDto::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public WorkLocation getById(@PathVariable Integer id) {
+    public WorkLocationDto getById(@PathVariable Integer id) {
         return workLocationRepository.findById(id)
+                .map(WorkLocationDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     @ResponseStatus(HttpStatus.CREATED)
-    public WorkLocation create(@RequestBody WorkLocation workLocation) {
-        return workLocationRepository.save(workLocation);
+    public WorkLocationDto create(@RequestBody WorkLocationDto workLocation) {
+        return WorkLocationDto.from(workLocationRepository.save(workLocation.toEntity()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public WorkLocation update(@PathVariable Integer id, @RequestBody WorkLocation details) {
+    public WorkLocationDto update(@PathVariable Integer id, @RequestBody WorkLocationDto details) {
         WorkLocation existing = workLocationRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        existing.setLocationName(details.getLocationName());
-        existing.setAddressLine1(details.getAddressLine1());
-        existing.setAddressLine2(details.getAddressLine2());
-        existing.setCity(details.getCity());
-        existing.setCountry(details.getCountry());
-        existing.setTimezone(details.getTimezone());
-        existing.setIsActive(details.getIsActive());
-        return workLocationRepository.save(existing);
+        existing.setLocationName(details.locationName());
+        existing.setAddressLine1(details.addressLine1());
+        existing.setAddressLine2(details.addressLine2());
+        existing.setCity(details.city());
+        existing.setCountry(details.country());
+        existing.setTimezone(details.timezone());
+        existing.setIsActive(details.isActive());
+        return WorkLocationDto.from(workLocationRepository.save(existing));
     }
 
     @DeleteMapping("/{id}")

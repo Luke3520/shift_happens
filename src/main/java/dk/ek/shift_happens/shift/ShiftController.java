@@ -16,33 +16,33 @@ public class ShiftController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public List<Shift> getShifts() {
-        return this.shiftRepository.findAll();
+    public List<ShiftDto> getShifts() {
+        return this.shiftRepository.findAll().stream().map(ShiftDto::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public Optional<Shift> getShiftById(@PathVariable Integer id) {
-        return this.shiftRepository.findById(id);
+    public Optional<ShiftDto> getShiftById(@PathVariable Integer id) {
+        return this.shiftRepository.findById(id).map(ShiftDto::from);
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public Shift createShift(@RequestBody Shift shift) {
-        return this.shiftRepository.save(shift);
+    public ShiftDto createShift(@RequestBody ShiftDto shift) {
+        return ShiftDto.from(this.shiftRepository.save(shift.toEntity()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public Shift updateShift(@PathVariable Integer id, @RequestBody Shift shiftDetails) {
+    public ShiftDto updateShift(@PathVariable Integer id, @RequestBody ShiftDto shiftDetails) {
         Shift shift = this.shiftRepository.findById(id).orElseThrow();
-        shift.setDepartmentId(shiftDetails.getDepartmentId());
-        shift.setWorkLocationId(shiftDetails.getWorkLocationId());
-        shift.setShiftName(shiftDetails.getShiftName());
-        shift.setStartDatetime(shiftDetails.getStartDatetime());
-        shift.setEndDatetime(shiftDetails.getEndDatetime());
-        shift.setShiftStatus(shiftDetails.getShiftStatus());
-        return this.shiftRepository.save(shift);
+        shift.setDepartmentId(shiftDetails.departmentId());
+        shift.setWorkLocationId(shiftDetails.workLocationId());
+        shift.setShiftName(shiftDetails.shiftName());
+        shift.setStartDatetime(shiftDetails.startDatetime());
+        shift.setEndDatetime(shiftDetails.endDatetime());
+        shift.setShiftStatus(shiftDetails.shiftStatus());
+        return ShiftDto.from(this.shiftRepository.save(shift));
     }
 
     @DeleteMapping("/{id}")

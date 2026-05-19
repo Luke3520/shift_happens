@@ -17,33 +17,34 @@ public class JobRoleController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public List<JobRole> getAll() {
-        return jobRoleRepository.findAll();
+    public List<JobRoleDto> getAll() {
+        return jobRoleRepository.findAll().stream().map(JobRoleDto::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public JobRole getById(@PathVariable Integer id) {
+    public JobRoleDto getById(@PathVariable Integer id) {
         return jobRoleRepository.findById(id)
+                .map(JobRoleDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     @ResponseStatus(HttpStatus.CREATED)
-    public JobRole create(@RequestBody JobRole jobRole) {
-        return jobRoleRepository.save(jobRole);
+    public JobRoleDto create(@RequestBody JobRoleDto jobRole) {
+        return JobRoleDto.from(jobRoleRepository.save(jobRole.toEntity()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public JobRole update(@PathVariable Integer id, @RequestBody JobRole details) {
+    public JobRoleDto update(@PathVariable Integer id, @RequestBody JobRoleDto details) {
         JobRole existing = jobRoleRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        existing.setRoleName(details.getRoleName());
-        existing.setJobRoleDescription(details.getJobRoleDescription());
-        existing.setIsCertificationRequired(details.getIsCertificationRequired());
-        return jobRoleRepository.save(existing);
+        existing.setRoleName(details.roleName());
+        existing.setJobRoleDescription(details.jobRoleDescription());
+        existing.setIsCertificationRequired(details.isCertificationRequired());
+        return JobRoleDto.from(jobRoleRepository.save(existing));
     }
 
     @DeleteMapping("/{id}")

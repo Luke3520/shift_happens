@@ -18,35 +18,35 @@ public class EmployeeJobRoleController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public List<EmployeeJobRole> getAll(Authentication auth) {
-        if (authHelper.isEmployee(auth)) {
-            return service.getByEmployeeId(authHelper.currentEmployeeId(auth));
-        }
-        return service.getAll();
+    public List<EmployeeJobRoleDto> getAll(Authentication auth) {
+        List<EmployeeJobRole> roles = authHelper.isEmployee(auth)
+                ? service.getByEmployeeId(authHelper.currentEmployeeId(auth))
+                : service.getAll();
+        return roles.stream().map(EmployeeJobRoleDto::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public EmployeeJobRole getById(@PathVariable Integer id, Authentication auth) {
+    public EmployeeJobRoleDto getById(@PathVariable Integer id, Authentication auth) {
         EmployeeJobRole role = service.getById(id);
 
         if (authHelper.isEmployee(auth)
                 && !role.getEmployeeId().equals(authHelper.currentEmployeeId(auth))) {
             throw authHelper.forbidden();
         }
-        return role;
+        return EmployeeJobRoleDto.from(role);
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public EmployeeJobRole create(@RequestBody EmployeeJobRole role) {
-        return service.create(role);
+    public EmployeeJobRoleDto create(@RequestBody EmployeeJobRoleDto role) {
+        return EmployeeJobRoleDto.from(service.create(role.toEntity()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public EmployeeJobRole update(@PathVariable Integer id, @RequestBody EmployeeJobRole role) {
-        return service.update(id, role);
+    public EmployeeJobRoleDto update(@PathVariable Integer id, @RequestBody EmployeeJobRoleDto role) {
+        return EmployeeJobRoleDto.from(service.update(id, role.toEntity()));
     }
 
     @DeleteMapping("/{id}")

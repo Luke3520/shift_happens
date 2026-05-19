@@ -19,36 +19,41 @@ public class EmployeeController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<Employee>> getEmployees(Authentication auth) {
+    public ResponseEntity<List<EmployeeDto>> getEmployees(Authentication auth) {
+        List<Employee> employees;
         if (authHelper.isEmployee(auth)) {
             Integer selfId = authHelper.currentEmployeeId(auth);
-            return ResponseEntity.ok(
-                    this.employeeService.findById(selfId).map(List::of).orElse(List.of()));
+            employees = this.employeeService.findById(selfId).map(List::of).orElse(List.of());
+        } else {
+            employees = this.employeeService.findAll();
         }
-        return ResponseEntity.ok(this.employeeService.findAll());
+        return ResponseEntity.ok(employees.stream().map(EmployeeDto::from).toList());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Employee> getEmployee(@PathVariable Integer id, Authentication auth) {
+    public ResponseEntity<EmployeeDto> getEmployee(@PathVariable Integer id, Authentication auth) {
         if (authHelper.isEmployee(auth) && !id.equals(authHelper.currentEmployeeId(auth))) {
             throw authHelper.forbidden();
         }
         return this.employeeService.findById(id)
+                .map(EmployeeDto::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public ResponseEntity<Employee> createEmployee(@RequestBody Employee employee) {
-        return ResponseEntity.status(201).body(this.employeeService.save(employee));
+    public ResponseEntity<EmployeeDto> createEmployee(@RequestBody EmployeeDto employee) {
+        Employee created = this.employeeService.save(employee.toEntity());
+        return ResponseEntity.status(201).body(EmployeeDto.from(created));
     }
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public ResponseEntity<Employee> patchEmployee(@PathVariable Integer id, @RequestBody Employee employee) {
-        return this.employeeService.patch(id, employee)
+    public ResponseEntity<EmployeeDto> patchEmployee(@PathVariable Integer id, @RequestBody EmployeeDto employee) {
+        return this.employeeService.patch(id, employee.toEntity())
+                .map(EmployeeDto::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

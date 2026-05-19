@@ -16,32 +16,32 @@ public class ShiftSwapApprovalController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public List<ShiftSwapApproval> getShiftSwapApprovals() {
-        return this.shiftSwapApprovalRepository.findAll();
+    public List<ShiftSwapApprovalDto> getShiftSwapApprovals() {
+        return this.shiftSwapApprovalRepository.findAll().stream().map(ShiftSwapApprovalDto::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public Optional<ShiftSwapApproval> getShiftSwapApprovalById(@PathVariable Integer id) {
-        return this.shiftSwapApprovalRepository.findById(id);
+    public Optional<ShiftSwapApprovalDto> getShiftSwapApprovalById(@PathVariable Integer id) {
+        return this.shiftSwapApprovalRepository.findById(id).map(ShiftSwapApprovalDto::from);
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public ShiftSwapApproval createShiftSwapApproval(@RequestBody ShiftSwapApproval shiftSwapApproval) {
-        return this.shiftSwapApprovalRepository.save(shiftSwapApproval);
+    public ShiftSwapApprovalDto createShiftSwapApproval(@RequestBody ShiftSwapApprovalDto shiftSwapApproval) {
+        return ShiftSwapApprovalDto.from(this.shiftSwapApprovalRepository.save(shiftSwapApproval.toEntity()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public ShiftSwapApproval updateShiftSwapApproval(@PathVariable Integer id, @RequestBody ShiftSwapApproval shiftSwapApprovalDetails) {
+    public ShiftSwapApprovalDto updateShiftSwapApproval(@PathVariable Integer id, @RequestBody ShiftSwapApprovalDto shiftSwapApprovalDetails) {
         ShiftSwapApproval shiftSwapApproval = this.shiftSwapApprovalRepository.findById(id).orElseThrow();
-        shiftSwapApproval.setShiftSwapId(shiftSwapApprovalDetails.getShiftSwapId());
-        shiftSwapApproval.setApproverEmployeeId(shiftSwapApprovalDetails.getApproverEmployeeId());
-        shiftSwapApproval.setDecision(shiftSwapApprovalDetails.getDecision());
-        shiftSwapApproval.setShiftSwapComment(shiftSwapApprovalDetails.getShiftSwapComment());
-        shiftSwapApproval.setDecisionDatetime(shiftSwapApprovalDetails.getDecisionDatetime());
-        return this.shiftSwapApprovalRepository.save(shiftSwapApproval);
+        shiftSwapApproval.setShiftSwapId(shiftSwapApprovalDetails.shiftSwapId());
+        shiftSwapApproval.setApproverEmployeeId(shiftSwapApprovalDetails.approverEmployeeId());
+        shiftSwapApproval.setDecision(shiftSwapApprovalDetails.decision());
+        shiftSwapApproval.setShiftSwapComment(shiftSwapApprovalDetails.shiftSwapComment());
+        shiftSwapApproval.setDecisionDatetime(shiftSwapApprovalDetails.decisionDatetime());
+        return ShiftSwapApprovalDto.from(this.shiftSwapApprovalRepository.save(shiftSwapApproval));
     }
 
     @DeleteMapping("/{id}")

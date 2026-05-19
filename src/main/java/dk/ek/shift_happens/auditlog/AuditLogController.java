@@ -15,7 +15,7 @@ public class AuditLogController {
     private final AuditLogRepository auditLogRepository;
 
     @GetMapping
-    public List<AuditLog> getAuditLogs() {
-        return this.auditLogRepository.findAll();
+    public List<AuditLogDto> getAuditLogs() {
+        return this.auditLogRepository.findAll().stream().map(AuditLogDto::from).toList();
     }
 }

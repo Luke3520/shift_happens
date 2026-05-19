@@ -17,34 +17,35 @@ public class LeaveTypeController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public List<LeaveType> getAll() {
-        return leaveTypeRepository.findAll();
+    public List<LeaveTypeDto> getAll() {
+        return leaveTypeRepository.findAll().stream().map(LeaveTypeDto::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public LeaveType getById(@PathVariable Integer id) {
+    public LeaveTypeDto getById(@PathVariable Integer id) {
         return leaveTypeRepository.findById(id)
+                .map(LeaveTypeDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     @ResponseStatus(HttpStatus.CREATED)
-    public LeaveType create(@RequestBody LeaveType leaveType) {
-        return leaveTypeRepository.save(leaveType);
+    public LeaveTypeDto create(@RequestBody LeaveTypeDto leaveType) {
+        return LeaveTypeDto.from(leaveTypeRepository.save(leaveType.toEntity()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public LeaveType update(@PathVariable Integer id, @RequestBody LeaveType details) {
+    public LeaveTypeDto update(@PathVariable Integer id, @RequestBody LeaveTypeDto details) {
         LeaveType existing = leaveTypeRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        existing.setLeaveTypeName(details.getLeaveTypeName());
-        existing.setLeaveTypeDescription(details.getLeaveTypeDescription());
-        existing.setRequiresApproval(details.getRequiresApproval());
-        existing.setIsPaidLeave(details.getIsPaidLeave());
-        return leaveTypeRepository.save(existing);
+        existing.setLeaveTypeName(details.leaveTypeName());
+        existing.setLeaveTypeDescription(details.leaveTypeDescription());
+        existing.setRequiresApproval(details.requiresApproval());
+        existing.setIsPaidLeave(details.isPaidLeave());
+        return LeaveTypeDto.from(leaveTypeRepository.save(existing));
     }
 
     @DeleteMapping("/{id}")

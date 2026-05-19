@@ -16,27 +16,27 @@ public class DepartmentController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public List<Department> getAll() {
-        return departmentService.findAll();
+    public List<DepartmentDto> getAll() {
+        return departmentService.findAll().stream().map(DepartmentDto::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public Department getById(@PathVariable Integer id) {
-        return departmentService.findById(id);
+    public DepartmentDto getById(@PathVariable Integer id) {
+        return DepartmentDto.from(departmentService.findById(id));
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     @ResponseStatus(HttpStatus.CREATED)
-    public Department create(@RequestBody Department department) {
-        return departmentService.create(department);
+    public DepartmentDto create(@RequestBody DepartmentDto department) {
+        return DepartmentDto.from(departmentService.create(department.toEntity()));
     }
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public Department update(@PathVariable Integer id, @RequestBody Department department) {
-        return departmentService.update(id, department);
+    public DepartmentDto update(@PathVariable Integer id, @RequestBody DepartmentDto department) {
+        return DepartmentDto.from(departmentService.update(id, department.toEntity()));
     }
 
     @DeleteMapping("/{id}")
