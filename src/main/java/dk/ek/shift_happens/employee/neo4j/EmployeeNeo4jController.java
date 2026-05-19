@@ -12,16 +12,16 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EmployeeNeo4jController {
 
-    private final EmployeeNeo4jRepository employeeNeo4jRepository;
+    private final EmployeeNeo4jService employeeNeo4jService;
 
     @GetMapping
     public List<EmployeeNodeDto> getAll() {
-        return employeeNeo4jRepository.findAll().stream().map(EmployeeNodeDto::from).toList();
+        return employeeNeo4jService.findAll().stream().map(EmployeeNodeDto::from).toList();
     }
 
     @GetMapping("/{id}")
     public EmployeeNodeDto getById(@PathVariable Long id) {
-        return employeeNeo4jRepository.findById(id)
+        return employeeNeo4jService.findById(id)
                 .map(EmployeeNodeDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }

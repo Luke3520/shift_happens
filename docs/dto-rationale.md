@@ -106,10 +106,7 @@ Two details specific to Neo4j:
 
 ## Known follow-ups (out of scope here)
 
-- **Mongo and Neo4j controllers have no service layer** — they call
-  repositories directly, whereas the assignment asks for
-  `controllers -> services -> repositories`. Not addressed in this
-  DTO-focused change.
+- **Service layer** — added in a follow-up branch; see `docs/service-layer.md`.
 - **Mongo and Neo4j controllers have no `@PreAuthorize`** — they are
   unauthenticated, unlike the JPA controllers. A separate security concern.
 

@@ -12,41 +12,37 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ShiftMongoController {
 
-    private final ShiftMongoRepository shiftMongoRepository;
+    private final ShiftMongoService shiftMongoService;
 
     @GetMapping
     public List<ShiftDocumentDto> getAll() {
-        return shiftMongoRepository.findAll().stream().map(ShiftDocumentDto::from).toList();
+        return shiftMongoService.findAll().stream().map(ShiftDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
     public ShiftDocumentDto getById(@PathVariable Integer id) {
-        return shiftMongoRepository.findById(id)
+        return shiftMongoService.findById(id)
                 .map(ShiftDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
     public ShiftDocumentDto create(@RequestBody ShiftDocumentDto shift) {
-        return ShiftDocumentDto.from(shiftMongoRepository.save(shift.toEntity()));
+        return ShiftDocumentDto.from(shiftMongoService.create(shift.toEntity()));
     }
 
     @PutMapping("/{id}")
     public ShiftDocumentDto update(@PathVariable Integer id, @RequestBody ShiftDocumentDto shift) {
-        if (!shiftMongoRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-        ShiftDocument entity = shift.toEntity();
-        entity.setShiftId(id);
-        return ShiftDocumentDto.from(shiftMongoRepository.save(entity));
+        return shiftMongoService.update(id, shift.toEntity())
+                .map(ShiftDocumentDto::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Integer id) {
-        if (!shiftMongoRepository.existsById(id)) {
+        if (!shiftMongoService.delete(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        shiftMongoRepository.deleteById(id);
     }
 }

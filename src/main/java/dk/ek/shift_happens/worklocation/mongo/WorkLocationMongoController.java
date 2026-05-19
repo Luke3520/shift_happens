@@ -12,41 +12,37 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WorkLocationMongoController {
 
-    private final WorkLocationMongoRepository workLocationMongoRepository;
+    private final WorkLocationMongoService workLocationMongoService;
 
     @GetMapping
     public List<WorkLocationDocumentDto> getAll() {
-        return workLocationMongoRepository.findAll().stream().map(WorkLocationDocumentDto::from).toList();
+        return workLocationMongoService.findAll().stream().map(WorkLocationDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
     public WorkLocationDocumentDto getById(@PathVariable String id) {
-        return workLocationMongoRepository.findById(id)
+        return workLocationMongoService.findById(id)
                 .map(WorkLocationDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
     public WorkLocationDocumentDto create(@RequestBody WorkLocationDocumentDto workLocation) {
-        return WorkLocationDocumentDto.from(workLocationMongoRepository.save(workLocation.toEntity()));
+        return WorkLocationDocumentDto.from(workLocationMongoService.create(workLocation.toEntity()));
     }
 
     @PutMapping("/{id}")
     public WorkLocationDocumentDto update(@PathVariable String id, @RequestBody WorkLocationDocumentDto workLocation) {
-        if (!workLocationMongoRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-        WorkLocationDocument entity = workLocation.toEntity();
-        entity.setId(id);
-        return WorkLocationDocumentDto.from(workLocationMongoRepository.save(entity));
+        return workLocationMongoService.update(id, workLocation.toEntity())
+                .map(WorkLocationDocumentDto::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
-        if (!workLocationMongoRepository.existsById(id)) {
+        if (!workLocationMongoService.delete(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        workLocationMongoRepository.deleteById(id);
     }
 }

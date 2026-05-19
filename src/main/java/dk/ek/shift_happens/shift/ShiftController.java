@@ -12,42 +12,37 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ShiftController {
 
-    private final ShiftRepository shiftRepository;
+    private final ShiftService shiftService;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public List<ShiftDto> getShifts() {
-        return this.shiftRepository.findAll().stream().map(ShiftDto::from).toList();
+        return this.shiftService.findAll().stream().map(ShiftDto::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public Optional<ShiftDto> getShiftById(@PathVariable Integer id) {
-        return this.shiftRepository.findById(id).map(ShiftDto::from);
+        return this.shiftService.findById(id).map(ShiftDto::from);
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     public ShiftDto createShift(@RequestBody ShiftDto shift) {
-        return ShiftDto.from(this.shiftRepository.save(shift.toEntity()));
+        return ShiftDto.from(this.shiftService.create(shift.toEntity()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     public ShiftDto updateShift(@PathVariable Integer id, @RequestBody ShiftDto shiftDetails) {
-        Shift shift = this.shiftRepository.findById(id).orElseThrow();
-        shift.setDepartmentId(shiftDetails.departmentId());
-        shift.setWorkLocationId(shiftDetails.workLocationId());
-        shift.setShiftName(shiftDetails.shiftName());
-        shift.setStartDatetime(shiftDetails.startDatetime());
-        shift.setEndDatetime(shiftDetails.endDatetime());
-        shift.setShiftStatus(shiftDetails.shiftStatus());
-        return ShiftDto.from(this.shiftRepository.save(shift));
+        return this.shiftService.update(id, shiftDetails.toEntity())
+                .map(ShiftDto::from)
+                .orElseThrow();
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     public void deleteShift(@PathVariable Integer id) {
-        this.shiftRepository.deleteById(id);
+        this.shiftService.delete(id);
     }
 }

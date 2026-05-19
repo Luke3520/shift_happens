@@ -12,10 +12,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AuditLogController {
 
-    private final AuditLogRepository auditLogRepository;
+    private final AuditLogService auditLogService;
 
     @GetMapping
     public List<AuditLogDto> getAuditLogs() {
-        return this.auditLogRepository.findAll().stream().map(AuditLogDto::from).toList();
+        return this.auditLogService.findAll().stream().map(AuditLogDto::from).toList();
     }
 }

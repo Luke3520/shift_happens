@@ -12,41 +12,37 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ShiftApprovalController {
 
-    private final ShiftApprovalRepository shiftApprovalRepository;
+    private final ShiftApprovalService shiftApprovalService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     public List<ShiftApprovalDto> getShiftApprovals() {
-        return this.shiftApprovalRepository.findAll().stream().map(ShiftApprovalDto::from).toList();
+        return this.shiftApprovalService.findAll().stream().map(ShiftApprovalDto::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     public Optional<ShiftApprovalDto> getShiftApprovalById(@PathVariable Integer id) {
-        return this.shiftApprovalRepository.findById(id).map(ShiftApprovalDto::from);
+        return this.shiftApprovalService.findById(id).map(ShiftApprovalDto::from);
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     public ShiftApprovalDto createShiftApproval(@RequestBody ShiftApprovalDto shiftApproval) {
-        return ShiftApprovalDto.from(this.shiftApprovalRepository.save(shiftApproval.toEntity()));
+        return ShiftApprovalDto.from(this.shiftApprovalService.create(shiftApproval.toEntity()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     public ShiftApprovalDto updateShiftApproval(@PathVariable Integer id, @RequestBody ShiftApprovalDto shiftApprovalDetails) {
-        ShiftApproval shiftApproval = this.shiftApprovalRepository.findById(id).orElseThrow();
-        shiftApproval.setShiftAssignmentId(shiftApprovalDetails.shiftAssignmentId());
-        shiftApproval.setApproverEmployeeId(shiftApprovalDetails.approverEmployeeId());
-        shiftApproval.setDecision(shiftApprovalDetails.decision());
-        shiftApproval.setApprovalComment(shiftApprovalDetails.approvalComment());
-        shiftApproval.setDecisionDatetime(shiftApprovalDetails.decisionDatetime());
-        return ShiftApprovalDto.from(this.shiftApprovalRepository.save(shiftApproval));
+        return this.shiftApprovalService.update(id, shiftApprovalDetails.toEntity())
+                .map(ShiftApprovalDto::from)
+                .orElseThrow();
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     public void deleteShiftApproval(@PathVariable Integer id) {
-        this.shiftApprovalRepository.deleteById(id);
+        this.shiftApprovalService.delete(id);
     }
 }
