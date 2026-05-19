@@ -16,11 +16,14 @@ public record MigrationResult(
         int neo4jShifts,
         int neo4jJobRoles,
         int neo4jShiftSwaps,
+        int neo4jShiftAssignments,
         int neo4jLeaveTypes,
         int neo4jLeaveRequests,
         int neo4jLeaveApprovals,
         int neo4jShiftApprovals,
         int neo4jShiftSwapApprovals,
+        int neo4jLeaveLedgers,
+        int neo4jEmployeeContracts,
         List<String> errors
 ) {
 }
