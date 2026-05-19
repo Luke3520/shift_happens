@@ -15,28 +15,30 @@ public class LeaveMongoController {
     private final LeaveMongoRepository leaveMongoRepository;
 
     @GetMapping
-    public List<LeaveDocument> getAll() {
-        return leaveMongoRepository.findAll();
+    public List<LeaveDocumentDto> getAll() {
+        return leaveMongoRepository.findAll().stream().map(LeaveDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public LeaveDocument getById(@PathVariable String id) {
+    public LeaveDocumentDto getById(@PathVariable String id) {
         return leaveMongoRepository.findById(id)
+                .map(LeaveDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
-    public LeaveDocument create(@RequestBody LeaveDocument leave) {
-        return leaveMongoRepository.save(leave);
+    public LeaveDocumentDto create(@RequestBody LeaveDocumentDto leave) {
+        return LeaveDocumentDto.from(leaveMongoRepository.save(leave.toEntity()));
     }
 
     @PutMapping("/{id}")
-    public LeaveDocument update(@PathVariable String id, @RequestBody LeaveDocument leave) {
+    public LeaveDocumentDto update(@PathVariable String id, @RequestBody LeaveDocumentDto leave) {
         if (!leaveMongoRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        leave.setId(id);
-        return leaveMongoRepository.save(leave);
+        LeaveDocument entity = leave.toEntity();
+        entity.setId(id);
+        return LeaveDocumentDto.from(leaveMongoRepository.save(entity));
     }
 
     @DeleteMapping("/{id}")

@@ -15,28 +15,30 @@ public class AuditLogMongoController {
     private final AuditLogMongoRepository auditLogMongoRepository;
 
     @GetMapping
-    public List<AuditLogDocument> getAll() {
-        return auditLogMongoRepository.findAll();
+    public List<AuditLogDocumentDto> getAll() {
+        return auditLogMongoRepository.findAll().stream().map(AuditLogDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public AuditLogDocument getById(@PathVariable String id) {
+    public AuditLogDocumentDto getById(@PathVariable String id) {
         return auditLogMongoRepository.findById(id)
+                .map(AuditLogDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
-    public AuditLogDocument create(@RequestBody AuditLogDocument auditLog) {
-        return auditLogMongoRepository.save(auditLog);
+    public AuditLogDocumentDto create(@RequestBody AuditLogDocumentDto auditLog) {
+        return AuditLogDocumentDto.from(auditLogMongoRepository.save(auditLog.toEntity()));
     }
 
     @PutMapping("/{id}")
-    public AuditLogDocument update(@PathVariable String id, @RequestBody AuditLogDocument auditLog) {
+    public AuditLogDocumentDto update(@PathVariable String id, @RequestBody AuditLogDocumentDto auditLog) {
         if (!auditLogMongoRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        auditLog.setId(id);
-        return auditLogMongoRepository.save(auditLog);
+        AuditLogDocument entity = auditLog.toEntity();
+        entity.setId(id);
+        return AuditLogDocumentDto.from(auditLogMongoRepository.save(entity));
     }
 
     @DeleteMapping("/{id}")

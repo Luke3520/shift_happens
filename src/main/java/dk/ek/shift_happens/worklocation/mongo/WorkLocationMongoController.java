@@ -15,28 +15,30 @@ public class WorkLocationMongoController {
     private final WorkLocationMongoRepository workLocationMongoRepository;
 
     @GetMapping
-    public List<WorkLocationDocument> getAll() {
-        return workLocationMongoRepository.findAll();
+    public List<WorkLocationDocumentDto> getAll() {
+        return workLocationMongoRepository.findAll().stream().map(WorkLocationDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public WorkLocationDocument getById(@PathVariable String id) {
+    public WorkLocationDocumentDto getById(@PathVariable String id) {
         return workLocationMongoRepository.findById(id)
+                .map(WorkLocationDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
-    public WorkLocationDocument create(@RequestBody WorkLocationDocument workLocation) {
-        return workLocationMongoRepository.save(workLocation);
+    public WorkLocationDocumentDto create(@RequestBody WorkLocationDocumentDto workLocation) {
+        return WorkLocationDocumentDto.from(workLocationMongoRepository.save(workLocation.toEntity()));
     }
 
     @PutMapping("/{id}")
-    public WorkLocationDocument update(@PathVariable String id, @RequestBody WorkLocationDocument workLocation) {
+    public WorkLocationDocumentDto update(@PathVariable String id, @RequestBody WorkLocationDocumentDto workLocation) {
         if (!workLocationMongoRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        workLocation.setId(id);
-        return workLocationMongoRepository.save(workLocation);
+        WorkLocationDocument entity = workLocation.toEntity();
+        entity.setId(id);
+        return WorkLocationDocumentDto.from(workLocationMongoRepository.save(entity));
     }
 
     @DeleteMapping("/{id}")

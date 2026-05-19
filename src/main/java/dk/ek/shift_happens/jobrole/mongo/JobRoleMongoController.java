@@ -15,28 +15,30 @@ public class JobRoleMongoController {
     private final JobRoleMongoRepository jobRoleMongoRepository;
 
     @GetMapping
-    public List<JobRoleDocument> getAll() {
-        return jobRoleMongoRepository.findAll();
+    public List<JobRoleDocumentDto> getAll() {
+        return jobRoleMongoRepository.findAll().stream().map(JobRoleDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public JobRoleDocument getById(@PathVariable String id) {
+    public JobRoleDocumentDto getById(@PathVariable String id) {
         return jobRoleMongoRepository.findById(id)
+                .map(JobRoleDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
-    public JobRoleDocument create(@RequestBody JobRoleDocument jobRole) {
-        return jobRoleMongoRepository.save(jobRole);
+    public JobRoleDocumentDto create(@RequestBody JobRoleDocumentDto jobRole) {
+        return JobRoleDocumentDto.from(jobRoleMongoRepository.save(jobRole.toEntity()));
     }
 
     @PutMapping("/{id}")
-    public JobRoleDocument update(@PathVariable String id, @RequestBody JobRoleDocument jobRole) {
+    public JobRoleDocumentDto update(@PathVariable String id, @RequestBody JobRoleDocumentDto jobRole) {
         if (!jobRoleMongoRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        jobRole.setId(id);
-        return jobRoleMongoRepository.save(jobRole);
+        JobRoleDocument entity = jobRole.toEntity();
+        entity.setId(id);
+        return JobRoleDocumentDto.from(jobRoleMongoRepository.save(entity));
     }
 
     @DeleteMapping("/{id}")

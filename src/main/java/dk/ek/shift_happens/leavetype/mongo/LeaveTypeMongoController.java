@@ -15,28 +15,30 @@ public class LeaveTypeMongoController {
     private final LeaveTypeMongoRepository leaveTypeMongoRepository;
 
     @GetMapping
-    public List<LeaveTypeDocument> getAll() {
-        return leaveTypeMongoRepository.findAll();
+    public List<LeaveTypeDocumentDto> getAll() {
+        return leaveTypeMongoRepository.findAll().stream().map(LeaveTypeDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public LeaveTypeDocument getById(@PathVariable String id) {
+    public LeaveTypeDocumentDto getById(@PathVariable String id) {
         return leaveTypeMongoRepository.findById(id)
+                .map(LeaveTypeDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
-    public LeaveTypeDocument create(@RequestBody LeaveTypeDocument leaveType) {
-        return leaveTypeMongoRepository.save(leaveType);
+    public LeaveTypeDocumentDto create(@RequestBody LeaveTypeDocumentDto leaveType) {
+        return LeaveTypeDocumentDto.from(leaveTypeMongoRepository.save(leaveType.toEntity()));
     }
 
     @PutMapping("/{id}")
-    public LeaveTypeDocument update(@PathVariable String id, @RequestBody LeaveTypeDocument leaveType) {
+    public LeaveTypeDocumentDto update(@PathVariable String id, @RequestBody LeaveTypeDocumentDto leaveType) {
         if (!leaveTypeMongoRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        leaveType.setId(id);
-        return leaveTypeMongoRepository.save(leaveType);
+        LeaveTypeDocument entity = leaveType.toEntity();
+        entity.setId(id);
+        return LeaveTypeDocumentDto.from(leaveTypeMongoRepository.save(entity));
     }
 
     @DeleteMapping("/{id}")

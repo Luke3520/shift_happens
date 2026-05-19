@@ -15,28 +15,30 @@ public class DepartmentMongoController {
     private final DepartmentMongoRepository departmentMongoRepository;
 
     @GetMapping
-    public List<DepartmentDocument> getAll() {
-        return departmentMongoRepository.findAll();
+    public List<DepartmentDocumentDto> getAll() {
+        return departmentMongoRepository.findAll().stream().map(DepartmentDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public DepartmentDocument getById(@PathVariable String id) {
+    public DepartmentDocumentDto getById(@PathVariable String id) {
         return departmentMongoRepository.findById(id)
+                .map(DepartmentDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
-    public DepartmentDocument create(@RequestBody DepartmentDocument department) {
-        return departmentMongoRepository.save(department);
+    public DepartmentDocumentDto create(@RequestBody DepartmentDocumentDto department) {
+        return DepartmentDocumentDto.from(departmentMongoRepository.save(department.toEntity()));
     }
 
     @PutMapping("/{id}")
-    public DepartmentDocument update(@PathVariable String id, @RequestBody DepartmentDocument department) {
+    public DepartmentDocumentDto update(@PathVariable String id, @RequestBody DepartmentDocumentDto department) {
         if (!departmentMongoRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        department.setId(id);
-        return departmentMongoRepository.save(department);
+        DepartmentDocument entity = department.toEntity();
+        entity.setId(id);
+        return DepartmentDocumentDto.from(departmentMongoRepository.save(entity));
     }
 
     @DeleteMapping("/{id}")
