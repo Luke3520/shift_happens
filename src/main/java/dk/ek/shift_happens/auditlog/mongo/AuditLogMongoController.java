@@ -12,41 +12,37 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AuditLogMongoController {
 
-    private final AuditLogMongoRepository auditLogMongoRepository;
+    private final AuditLogMongoService auditLogMongoService;
 
     @GetMapping
     public List<AuditLogDocumentDto> getAll() {
-        return auditLogMongoRepository.findAll().stream().map(AuditLogDocumentDto::from).toList();
+        return auditLogMongoService.findAll().stream().map(AuditLogDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
     public AuditLogDocumentDto getById(@PathVariable String id) {
-        return auditLogMongoRepository.findById(id)
+        return auditLogMongoService.findById(id)
                 .map(AuditLogDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
     public AuditLogDocumentDto create(@RequestBody AuditLogDocumentDto auditLog) {
-        return AuditLogDocumentDto.from(auditLogMongoRepository.save(auditLog.toEntity()));
+        return AuditLogDocumentDto.from(auditLogMongoService.create(auditLog.toEntity()));
     }
 
     @PutMapping("/{id}")
     public AuditLogDocumentDto update(@PathVariable String id, @RequestBody AuditLogDocumentDto auditLog) {
-        if (!auditLogMongoRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-        AuditLogDocument entity = auditLog.toEntity();
-        entity.setId(id);
-        return AuditLogDocumentDto.from(auditLogMongoRepository.save(entity));
+        return auditLogMongoService.update(id, auditLog.toEntity())
+                .map(AuditLogDocumentDto::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
-        if (!auditLogMongoRepository.existsById(id)) {
+        if (!auditLogMongoService.delete(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        auditLogMongoRepository.deleteById(id);
     }
 }

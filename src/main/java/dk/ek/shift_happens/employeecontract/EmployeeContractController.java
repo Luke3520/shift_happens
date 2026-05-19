@@ -15,22 +15,22 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EmployeeContractController {
 
-    private final EmployeeContractRepository employeeContractRepository;
+    private final EmployeeContractService employeeContractService;
     private final AuthHelper authHelper;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public List<EmployeeContractDto> getAll(Authentication auth) {
         List<EmployeeContract> contracts = authHelper.isEmployee(auth)
-                ? employeeContractRepository.findByEmployeeId(authHelper.currentEmployeeId(auth))
-                : employeeContractRepository.findAll();
+                ? employeeContractService.findByEmployeeId(authHelper.currentEmployeeId(auth))
+                : employeeContractService.findAll();
         return contracts.stream().map(EmployeeContractDto::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public EmployeeContractDto getById(@PathVariable Integer id, Authentication auth) {
-        EmployeeContract contract = employeeContractRepository.findById(id)
+        EmployeeContract contract = employeeContractService.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         if (authHelper.isEmployee(auth)
@@ -44,29 +44,21 @@ public class EmployeeContractController {
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     @ResponseStatus(HttpStatus.CREATED)
     public EmployeeContractDto create(@RequestBody EmployeeContractDto contract) {
-        return EmployeeContractDto.from(employeeContractRepository.save(contract.toEntity()));
+        return EmployeeContractDto.from(employeeContractService.create(contract.toEntity()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     public EmployeeContractDto update(@PathVariable Integer id, @RequestBody EmployeeContractDto details) {
-        EmployeeContract existing = employeeContractRepository.findById(id)
+        return employeeContractService.update(id, details.toEntity())
+                .map(EmployeeContractDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        existing.setEmployeeId(details.employeeId());
-        existing.setDepartmentId(details.departmentId());
-        existing.setContractType(details.contractType());
-        existing.setStartDate(details.startDate());
-        existing.setEndDate(details.endDate());
-        existing.setWeeklyHours(details.weeklyHours());
-        // salaryAmount is not part of the DTO and is left untouched on update.
-        existing.setIsActive(details.isActive());
-        return EmployeeContractDto.from(employeeContractRepository.save(existing));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Integer id) {
-        employeeContractRepository.deleteById(id);
+        employeeContractService.delete(id);
     }
 }

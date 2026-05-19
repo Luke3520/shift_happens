@@ -12,41 +12,37 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LeaveTypeMongoController {
 
-    private final LeaveTypeMongoRepository leaveTypeMongoRepository;
+    private final LeaveTypeMongoService leaveTypeMongoService;
 
     @GetMapping
     public List<LeaveTypeDocumentDto> getAll() {
-        return leaveTypeMongoRepository.findAll().stream().map(LeaveTypeDocumentDto::from).toList();
+        return leaveTypeMongoService.findAll().stream().map(LeaveTypeDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
     public LeaveTypeDocumentDto getById(@PathVariable String id) {
-        return leaveTypeMongoRepository.findById(id)
+        return leaveTypeMongoService.findById(id)
                 .map(LeaveTypeDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
     public LeaveTypeDocumentDto create(@RequestBody LeaveTypeDocumentDto leaveType) {
-        return LeaveTypeDocumentDto.from(leaveTypeMongoRepository.save(leaveType.toEntity()));
+        return LeaveTypeDocumentDto.from(leaveTypeMongoService.create(leaveType.toEntity()));
     }
 
     @PutMapping("/{id}")
     public LeaveTypeDocumentDto update(@PathVariable String id, @RequestBody LeaveTypeDocumentDto leaveType) {
-        if (!leaveTypeMongoRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-        LeaveTypeDocument entity = leaveType.toEntity();
-        entity.setId(id);
-        return LeaveTypeDocumentDto.from(leaveTypeMongoRepository.save(entity));
+        return leaveTypeMongoService.update(id, leaveType.toEntity())
+                .map(LeaveTypeDocumentDto::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
-        if (!leaveTypeMongoRepository.existsById(id)) {
+        if (!leaveTypeMongoService.delete(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        leaveTypeMongoRepository.deleteById(id);
     }
 }

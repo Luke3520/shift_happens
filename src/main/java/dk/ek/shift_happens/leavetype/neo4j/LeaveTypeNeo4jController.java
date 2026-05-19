@@ -12,16 +12,16 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LeaveTypeNeo4jController {
 
-    private final LeaveTypeNeo4jRepository leaveTypeNeo4jRepository;
+    private final LeaveTypeNeo4jService leaveTypeNeo4jService;
 
     @GetMapping
     public List<LeaveTypeNodeDto> getAll() {
-        return leaveTypeNeo4jRepository.findAll().stream().map(LeaveTypeNodeDto::from).toList();
+        return leaveTypeNeo4jService.findAll().stream().map(LeaveTypeNodeDto::from).toList();
     }
 
     @GetMapping("/{id}")
     public LeaveTypeNodeDto getById(@PathVariable Long id) {
-        return leaveTypeNeo4jRepository.findById(id)
+        return leaveTypeNeo4jService.findById(id)
                 .map(LeaveTypeNodeDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
@@ -29,25 +29,21 @@ public class LeaveTypeNeo4jController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public LeaveTypeNodeDto create(@RequestBody LeaveTypeNodeDto node) {
-        return LeaveTypeNodeDto.from(leaveTypeNeo4jRepository.save(node.toEntity()));
+        return LeaveTypeNodeDto.from(leaveTypeNeo4jService.create(node.toEntity()));
     }
 
     @PutMapping("/{id}")
     public LeaveTypeNodeDto update(@PathVariable Long id, @RequestBody LeaveTypeNodeDto node) {
-        if (!leaveTypeNeo4jRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-        LeaveTypeNode entity = node.toEntity();
-        entity.setId(id);
-        return LeaveTypeNodeDto.from(leaveTypeNeo4jRepository.save(entity));
+        return leaveTypeNeo4jService.update(id, node.toEntity())
+                .map(LeaveTypeNodeDto::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
-        if (!leaveTypeNeo4jRepository.existsById(id)) {
+        if (!leaveTypeNeo4jService.delete(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        leaveTypeNeo4jRepository.deleteById(id);
     }
 }

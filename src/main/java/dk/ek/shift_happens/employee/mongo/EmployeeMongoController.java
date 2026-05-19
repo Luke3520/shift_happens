@@ -12,41 +12,37 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EmployeeMongoController {
 
-    private final EmployeeMongoRepository employeeMongoRepository;
+    private final EmployeeMongoService employeeMongoService;
 
     @GetMapping
     public List<EmployeeDocumentDto> getAll() {
-        return employeeMongoRepository.findAll().stream().map(EmployeeDocumentDto::from).toList();
+        return employeeMongoService.findAll().stream().map(EmployeeDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
     public EmployeeDocumentDto getById(@PathVariable Integer id) {
-        return employeeMongoRepository.findById(id)
+        return employeeMongoService.findById(id)
                 .map(EmployeeDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
     public EmployeeDocumentDto create(@RequestBody EmployeeDocumentDto employee) {
-        return EmployeeDocumentDto.from(employeeMongoRepository.save(employee.toEntity()));
+        return EmployeeDocumentDto.from(employeeMongoService.create(employee.toEntity()));
     }
 
     @PutMapping("/{id}")
     public EmployeeDocumentDto update(@PathVariable Integer id, @RequestBody EmployeeDocumentDto employee) {
-        if (!employeeMongoRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-        EmployeeDocument entity = employee.toEntity();
-        entity.setEmployeeId(id);
-        return EmployeeDocumentDto.from(employeeMongoRepository.save(entity));
+        return employeeMongoService.update(id, employee.toEntity())
+                .map(EmployeeDocumentDto::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Integer id) {
-        if (!employeeMongoRepository.existsById(id)) {
+        if (!employeeMongoService.delete(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        employeeMongoRepository.deleteById(id);
     }
 }

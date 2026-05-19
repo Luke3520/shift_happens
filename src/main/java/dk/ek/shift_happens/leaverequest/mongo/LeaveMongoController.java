@@ -12,41 +12,37 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LeaveMongoController {
 
-    private final LeaveMongoRepository leaveMongoRepository;
+    private final LeaveMongoService leaveMongoService;
 
     @GetMapping
     public List<LeaveDocumentDto> getAll() {
-        return leaveMongoRepository.findAll().stream().map(LeaveDocumentDto::from).toList();
+        return leaveMongoService.findAll().stream().map(LeaveDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
     public LeaveDocumentDto getById(@PathVariable String id) {
-        return leaveMongoRepository.findById(id)
+        return leaveMongoService.findById(id)
                 .map(LeaveDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
     public LeaveDocumentDto create(@RequestBody LeaveDocumentDto leave) {
-        return LeaveDocumentDto.from(leaveMongoRepository.save(leave.toEntity()));
+        return LeaveDocumentDto.from(leaveMongoService.create(leave.toEntity()));
     }
 
     @PutMapping("/{id}")
     public LeaveDocumentDto update(@PathVariable String id, @RequestBody LeaveDocumentDto leave) {
-        if (!leaveMongoRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-        LeaveDocument entity = leave.toEntity();
-        entity.setId(id);
-        return LeaveDocumentDto.from(leaveMongoRepository.save(entity));
+        return leaveMongoService.update(id, leave.toEntity())
+                .map(LeaveDocumentDto::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
-        if (!leaveMongoRepository.existsById(id)) {
+        if (!leaveMongoService.delete(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        leaveMongoRepository.deleteById(id);
     }
 }
