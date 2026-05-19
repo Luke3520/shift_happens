@@ -15,13 +15,14 @@ public class JobRoleNeo4jController {
     private final JobRoleNeo4jRepository jobRoleNeo4jRepository;
 
     @GetMapping
-    public List<JobRoleNode> getAll() {
-        return jobRoleNeo4jRepository.findAll();
+    public List<JobRoleNodeDto> getAll() {
+        return jobRoleNeo4jRepository.findAll().stream().map(JobRoleNodeDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public JobRoleNode getById(@PathVariable Long id) {
+    public JobRoleNodeDto getById(@PathVariable Long id) {
         return jobRoleNeo4jRepository.findById(id)
+                .map(JobRoleNodeDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 }

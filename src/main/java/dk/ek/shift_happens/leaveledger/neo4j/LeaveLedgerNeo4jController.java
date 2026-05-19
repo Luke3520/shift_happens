@@ -15,29 +15,31 @@ public class LeaveLedgerNeo4jController {
     private final LeaveLedgerNeo4jRepository leaveLedgerNeo4jRepository;
 
     @GetMapping
-    public List<LeaveLedgerNode> getAll() {
-        return leaveLedgerNeo4jRepository.findAll();
+    public List<LeaveLedgerNodeDto> getAll() {
+        return leaveLedgerNeo4jRepository.findAll().stream().map(LeaveLedgerNodeDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public LeaveLedgerNode getById(@PathVariable Long id) {
+    public LeaveLedgerNodeDto getById(@PathVariable Long id) {
         return leaveLedgerNeo4jRepository.findById(id)
+                .map(LeaveLedgerNodeDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public LeaveLedgerNode create(@RequestBody LeaveLedgerNode node) {
-        return leaveLedgerNeo4jRepository.save(node);
+    public LeaveLedgerNodeDto create(@RequestBody LeaveLedgerNodeDto node) {
+        return LeaveLedgerNodeDto.from(leaveLedgerNeo4jRepository.save(node.toEntity()));
     }
 
     @PutMapping("/{id}")
-    public LeaveLedgerNode update(@PathVariable Long id, @RequestBody LeaveLedgerNode node) {
+    public LeaveLedgerNodeDto update(@PathVariable Long id, @RequestBody LeaveLedgerNodeDto node) {
         if (!leaveLedgerNeo4jRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        node.setId(id);
-        return leaveLedgerNeo4jRepository.save(node);
+        LeaveLedgerNode entity = node.toEntity();
+        entity.setId(id);
+        return LeaveLedgerNodeDto.from(leaveLedgerNeo4jRepository.save(entity));
     }
 
     @DeleteMapping("/{id}")

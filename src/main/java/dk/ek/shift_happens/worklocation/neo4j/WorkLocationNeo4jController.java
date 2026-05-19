@@ -15,13 +15,14 @@ public class WorkLocationNeo4jController {
     private final WorkLocationNeo4jRepository workLocationNeo4jRepository;
 
     @GetMapping
-    public List<WorkLocationNode> getAll() {
-        return workLocationNeo4jRepository.findAll();
+    public List<WorkLocationNodeDto> getAll() {
+        return workLocationNeo4jRepository.findAll().stream().map(WorkLocationNodeDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public WorkLocationNode getById(@PathVariable Long id) {
+    public WorkLocationNodeDto getById(@PathVariable Long id) {
         return workLocationNeo4jRepository.findById(id)
+                .map(WorkLocationNodeDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 }

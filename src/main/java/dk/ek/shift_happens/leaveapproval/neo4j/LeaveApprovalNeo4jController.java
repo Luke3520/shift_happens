@@ -15,29 +15,31 @@ public class LeaveApprovalNeo4jController {
     private final LeaveApprovalNeo4jRepository leaveApprovalNeo4jRepository;
 
     @GetMapping
-    public List<LeaveApprovalNode> getAll() {
-        return leaveApprovalNeo4jRepository.findAll();
+    public List<LeaveApprovalNodeDto> getAll() {
+        return leaveApprovalNeo4jRepository.findAll().stream().map(LeaveApprovalNodeDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public LeaveApprovalNode getById(@PathVariable Long id) {
+    public LeaveApprovalNodeDto getById(@PathVariable Long id) {
         return leaveApprovalNeo4jRepository.findById(id)
+                .map(LeaveApprovalNodeDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public LeaveApprovalNode create(@RequestBody LeaveApprovalNode node) {
-        return leaveApprovalNeo4jRepository.save(node);
+    public LeaveApprovalNodeDto create(@RequestBody LeaveApprovalNodeDto node) {
+        return LeaveApprovalNodeDto.from(leaveApprovalNeo4jRepository.save(node.toEntity()));
     }
 
     @PutMapping("/{id}")
-    public LeaveApprovalNode update(@PathVariable Long id, @RequestBody LeaveApprovalNode node) {
+    public LeaveApprovalNodeDto update(@PathVariable Long id, @RequestBody LeaveApprovalNodeDto node) {
         if (!leaveApprovalNeo4jRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        node.setId(id);
-        return leaveApprovalNeo4jRepository.save(node);
+        LeaveApprovalNode entity = node.toEntity();
+        entity.setId(id);
+        return LeaveApprovalNodeDto.from(leaveApprovalNeo4jRepository.save(entity));
     }
 
     @DeleteMapping("/{id}")

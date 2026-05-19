@@ -15,13 +15,14 @@ public class EmployeeNeo4jController {
     private final EmployeeNeo4jRepository employeeNeo4jRepository;
 
     @GetMapping
-    public List<EmployeeNode> getAll() {
-        return employeeNeo4jRepository.findAll();
+    public List<EmployeeNodeDto> getAll() {
+        return employeeNeo4jRepository.findAll().stream().map(EmployeeNodeDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public EmployeeNode getById(@PathVariable Long id) {
+    public EmployeeNodeDto getById(@PathVariable Long id) {
         return employeeNeo4jRepository.findById(id)
+                .map(EmployeeNodeDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 }

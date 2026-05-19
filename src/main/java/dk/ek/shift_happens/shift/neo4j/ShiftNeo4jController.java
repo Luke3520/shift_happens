@@ -15,13 +15,14 @@ public class ShiftNeo4jController {
     private final ShiftNeo4jRepository shiftNeo4jRepository;
 
     @GetMapping
-    public List<ShiftNode> getAll() {
-        return shiftNeo4jRepository.findAll();
+    public List<ShiftNodeDto> getAll() {
+        return shiftNeo4jRepository.findAll().stream().map(ShiftNodeDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public ShiftNode getById(@PathVariable Long id) {
+    public ShiftNodeDto getById(@PathVariable Long id) {
         return shiftNeo4jRepository.findById(id)
+                .map(ShiftNodeDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 }

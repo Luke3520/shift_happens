@@ -20,13 +20,14 @@ public class ShiftSwapNeo4jController {
     private final ShiftSwapNeo4jService shiftSwapNeo4jService;
 
     @GetMapping
-    public List<ShiftSwapNode> getAll() {
-        return shiftSwapNeo4jRepository.findAll();
+    public List<ShiftSwapNodeDto> getAll() {
+        return shiftSwapNeo4jRepository.findAll().stream().map(ShiftSwapNodeDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ShiftSwapNode> getById(@PathVariable Long id) {
+    public ResponseEntity<ShiftSwapNodeDto> getById(@PathVariable Long id) {
         return shiftSwapNeo4jRepository.findById(id)
+                .map(ShiftSwapNodeDto::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
