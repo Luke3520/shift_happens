@@ -15,43 +15,41 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JobRoleController {
 
-    private final JobRoleRepository jobRoleRepository;
+    private final JobRoleService jobRoleService;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public List<JobRole> getAll() {
-        return jobRoleRepository.findAll();
+    public List<JobRoleDto> getAll() {
+        return jobRoleService.findAll().stream().map(JobRoleDto::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public JobRole getById(@PathVariable Integer id) {
-        return jobRoleRepository.findById(id)
+    public JobRoleDto getById(@PathVariable Integer id) {
+        return jobRoleService.findById(id)
+                .map(JobRoleDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     @ResponseStatus(HttpStatus.CREATED)
-    public JobRole create(@RequestBody JobRole jobRole) {
-        return jobRoleRepository.save(jobRole);
+    public JobRoleDto create(@RequestBody JobRoleDto jobRole) {
+        return JobRoleDto.from(jobRoleService.create(jobRole.toEntity()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public JobRole update(@PathVariable Integer id, @RequestBody JobRole details) {
-        JobRole existing = jobRoleRepository.findById(id)
+    public JobRoleDto update(@PathVariable Integer id, @RequestBody JobRoleDto details) {
+        return jobRoleService.update(id, details.toEntity())
+                .map(JobRoleDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        existing.setRoleName(details.getRoleName());
-        existing.setJobRoleDescription(details.getJobRoleDescription());
-        existing.setIsCertificationRequired(details.getIsCertificationRequired());
-        return jobRoleRepository.save(existing);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Integer id) {
-        jobRoleRepository.deleteById(id);
+        jobRoleService.delete(id);
     }
 }

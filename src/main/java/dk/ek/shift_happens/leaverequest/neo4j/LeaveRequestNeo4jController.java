@@ -14,40 +14,38 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LeaveRequestNeo4jController {
 
-    private final LeaveRequestNeo4jRepository leaveRequestNeo4jRepository;
+    private final LeaveRequestNeo4jService leaveRequestNeo4jService;
 
     @GetMapping
-    public List<LeaveRequestNode> getAll() {
-        return leaveRequestNeo4jRepository.findAll();
+    public List<LeaveRequestNodeDto> getAll() {
+        return leaveRequestNeo4jService.findAll().stream().map(LeaveRequestNodeDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public LeaveRequestNode getById(@PathVariable Long id) {
-        return leaveRequestNeo4jRepository.findById(id)
+    public LeaveRequestNodeDto getById(@PathVariable Long id) {
+        return leaveRequestNeo4jService.findById(id)
+                .map(LeaveRequestNodeDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public LeaveRequestNode create(@RequestBody LeaveRequestNode node) {
-        return leaveRequestNeo4jRepository.save(node);
+    public LeaveRequestNodeDto create(@RequestBody LeaveRequestNodeDto node) {
+        return LeaveRequestNodeDto.from(leaveRequestNeo4jService.create(node.toEntity()));
     }
 
     @PutMapping("/{id}")
-    public LeaveRequestNode update(@PathVariable Long id, @RequestBody LeaveRequestNode node) {
-        if (!leaveRequestNeo4jRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-        node.setId(id);
-        return leaveRequestNeo4jRepository.save(node);
+    public LeaveRequestNodeDto update(@PathVariable Long id, @RequestBody LeaveRequestNodeDto node) {
+        return leaveRequestNeo4jService.update(id, node.toEntity())
+                .map(LeaveRequestNodeDto::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
-        if (!leaveRequestNeo4jRepository.existsById(id)) {
+        if (!leaveRequestNeo4jService.delete(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        leaveRequestNeo4jRepository.deleteById(id);
     }
 }

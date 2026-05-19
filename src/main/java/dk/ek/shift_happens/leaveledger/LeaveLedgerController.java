@@ -17,57 +17,50 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LeaveLedgerController {
 
-    private final LeaveLedgerRepository leaveLedgerRepository;
+    private final LeaveLedgerService leaveLedgerService;
     private final AuthHelper authHelper;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public List<LeaveLedger> getAll(Authentication auth) {
-        if (authHelper.isEmployee(auth)) {
-            return leaveLedgerRepository.findByEmployeeId(authHelper.currentEmployeeId(auth));
-        }
-        return leaveLedgerRepository.findAll();
+    public List<LeaveLedgerDto> getAll(Authentication auth) {
+        List<LeaveLedger> ledgers = authHelper.isEmployee(auth)
+                ? leaveLedgerService.findByEmployeeId(authHelper.currentEmployeeId(auth))
+                : leaveLedgerService.findAll();
+        return ledgers.stream().map(LeaveLedgerDto::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public LeaveLedger getById(@PathVariable Integer id, Authentication auth) {
-        LeaveLedger ledger = leaveLedgerRepository.findById(id)
+    public LeaveLedgerDto getById(@PathVariable Integer id, Authentication auth) {
+        LeaveLedger ledger = leaveLedgerService.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         if (authHelper.isEmployee(auth)
                 && !ledger.getEmployeeId().equals(authHelper.currentEmployeeId(auth))) {
             throw authHelper.forbidden();
         }
-        return ledger;
+        return LeaveLedgerDto.from(ledger);
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     @ResponseStatus(HttpStatus.CREATED)
-    public LeaveLedger create(@RequestBody LeaveLedger ledger) {
-        return leaveLedgerRepository.save(ledger);
+    public LeaveLedgerDto create(@RequestBody LeaveLedgerDto ledger) {
+        return LeaveLedgerDto.from(leaveLedgerService.create(ledger.toEntity()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public LeaveLedger update(@PathVariable Integer id, @RequestBody LeaveLedger details) {
-        LeaveLedger existing = leaveLedgerRepository.findById(id)
+    public LeaveLedgerDto update(@PathVariable Integer id, @RequestBody LeaveLedgerDto details) {
+        return leaveLedgerService.update(id, details.toEntity())
+                .map(LeaveLedgerDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        existing.setEmployeeId(details.getEmployeeId());
-        existing.setLeaveTypeId(details.getLeaveTypeId());
-        existing.setChangeAmountDays(details.getChangeAmountDays());
-        existing.setTransactionType(details.getTransactionType());
-        existing.setReferenceEntityType(details.getReferenceEntityType());
-        existing.setReferenceEntityId(details.getReferenceEntityId());
-        existing.setTransactionDatetime(details.getTransactionDatetime());
-        return leaveLedgerRepository.save(existing);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Integer id) {
-        leaveLedgerRepository.deleteById(id);
+        leaveLedgerService.delete(id);
     }
 }

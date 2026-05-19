@@ -14,39 +14,37 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EmployeeMongoController {
 
-    private final EmployeeMongoRepository employeeMongoRepository;
+    private final EmployeeMongoService employeeMongoService;
 
     @GetMapping
-    public List<EmployeeDocument> getAll() {
-        return employeeMongoRepository.findAll();
+    public List<EmployeeDocumentDto> getAll() {
+        return employeeMongoService.findAll().stream().map(EmployeeDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public EmployeeDocument getById(@PathVariable Integer id) {
-        return employeeMongoRepository.findById(id)
+    public EmployeeDocumentDto getById(@PathVariable Integer id) {
+        return employeeMongoService.findById(id)
+                .map(EmployeeDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
-    public EmployeeDocument create(@RequestBody EmployeeDocument employee) {
-        return employeeMongoRepository.save(employee);
+    public EmployeeDocumentDto create(@RequestBody EmployeeDocumentDto employee) {
+        return EmployeeDocumentDto.from(employeeMongoService.create(employee.toEntity()));
     }
 
     @PutMapping("/{id}")
-    public EmployeeDocument update(@PathVariable Integer id, @RequestBody EmployeeDocument employee) {
-        if (!employeeMongoRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-        employee.setEmployeeId(id);
-        return employeeMongoRepository.save(employee);
+    public EmployeeDocumentDto update(@PathVariable Integer id, @RequestBody EmployeeDocumentDto employee) {
+        return employeeMongoService.update(id, employee.toEntity())
+                .map(EmployeeDocumentDto::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Integer id) {
-        if (!employeeMongoRepository.existsById(id)) {
+        if (!employeeMongoService.delete(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        employeeMongoRepository.deleteById(id);
     }
 }

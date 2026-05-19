@@ -14,39 +14,37 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DepartmentMongoController {
 
-    private final DepartmentMongoRepository departmentMongoRepository;
+    private final DepartmentMongoService departmentMongoService;
 
     @GetMapping
-    public List<DepartmentDocument> getAll() {
-        return departmentMongoRepository.findAll();
+    public List<DepartmentDocumentDto> getAll() {
+        return departmentMongoService.findAll().stream().map(DepartmentDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public DepartmentDocument getById(@PathVariable String id) {
-        return departmentMongoRepository.findById(id)
+    public DepartmentDocumentDto getById(@PathVariable String id) {
+        return departmentMongoService.findById(id)
+                .map(DepartmentDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
-    public DepartmentDocument create(@RequestBody DepartmentDocument department) {
-        return departmentMongoRepository.save(department);
+    public DepartmentDocumentDto create(@RequestBody DepartmentDocumentDto department) {
+        return DepartmentDocumentDto.from(departmentMongoService.create(department.toEntity()));
     }
 
     @PutMapping("/{id}")
-    public DepartmentDocument update(@PathVariable String id, @RequestBody DepartmentDocument department) {
-        if (!departmentMongoRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-        department.setId(id);
-        return departmentMongoRepository.save(department);
+    public DepartmentDocumentDto update(@PathVariable String id, @RequestBody DepartmentDocumentDto department) {
+        return departmentMongoService.update(id, department.toEntity())
+                .map(DepartmentDocumentDto::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
-        if (!departmentMongoRepository.existsById(id)) {
+        if (!departmentMongoService.delete(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        departmentMongoRepository.deleteById(id);
     }
 }

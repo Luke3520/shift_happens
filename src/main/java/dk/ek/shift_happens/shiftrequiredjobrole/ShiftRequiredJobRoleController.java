@@ -14,39 +14,38 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ShiftRequiredJobRoleController {
 
-    private final ShiftRequiredJobRoleRepository shiftRequiredJobRoleRepository;
+    private final ShiftRequiredJobRoleService shiftRequiredJobRoleService;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public List<ShiftRequiredJobRole> getShiftRequiredJobRoles() {
-        return this.shiftRequiredJobRoleRepository.findAll();
+    public List<ShiftRequiredJobRoleDto> getShiftRequiredJobRoles() {
+        return this.shiftRequiredJobRoleService.findAll().stream()
+                .map(ShiftRequiredJobRoleDto::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public Optional<ShiftRequiredJobRole> getShiftRequiredJobRoleById(@PathVariable Integer id) {
-        return this.shiftRequiredJobRoleRepository.findById(id);
+    public Optional<ShiftRequiredJobRoleDto> getShiftRequiredJobRoleById(@PathVariable Integer id) {
+        return this.shiftRequiredJobRoleService.findById(id).map(ShiftRequiredJobRoleDto::from);
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public ShiftRequiredJobRole createShiftRequiredJobRole(@RequestBody ShiftRequiredJobRole shiftRequiredJobRole) {
-        return this.shiftRequiredJobRoleRepository.save(shiftRequiredJobRole);
+    public ShiftRequiredJobRoleDto createShiftRequiredJobRole(@RequestBody ShiftRequiredJobRoleDto shiftRequiredJobRole) {
+        return ShiftRequiredJobRoleDto.from(this.shiftRequiredJobRoleService.create(shiftRequiredJobRole.toEntity()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public ShiftRequiredJobRole updateShiftRequiredJobRole(@PathVariable Integer id, @RequestBody ShiftRequiredJobRole shiftRequiredJobRoleDetails) {
-        ShiftRequiredJobRole shiftRequiredJobRole = this.shiftRequiredJobRoleRepository.findById(id).orElseThrow();
-        shiftRequiredJobRole.setShiftId(shiftRequiredJobRoleDetails.getShiftId());
-        shiftRequiredJobRole.setJobRoleId(shiftRequiredJobRoleDetails.getJobRoleId());
-        shiftRequiredJobRole.setRequiredEmployeeCount(shiftRequiredJobRoleDetails.getRequiredEmployeeCount());
-        return this.shiftRequiredJobRoleRepository.save(shiftRequiredJobRole);
+    public ShiftRequiredJobRoleDto updateShiftRequiredJobRole(@PathVariable Integer id, @RequestBody ShiftRequiredJobRoleDto shiftRequiredJobRoleDetails) {
+        return this.shiftRequiredJobRoleService.update(id, shiftRequiredJobRoleDetails.toEntity())
+                .map(ShiftRequiredJobRoleDto::from)
+                .orElseThrow();
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     public void deleteShiftRequiredJobRole(@PathVariable Integer id) {
-        this.shiftRequiredJobRoleRepository.deleteById(id);
+        this.shiftRequiredJobRoleService.delete(id);
     }
 }

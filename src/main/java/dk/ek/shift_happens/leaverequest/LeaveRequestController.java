@@ -21,38 +21,39 @@ public class LeaveRequestController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<LeaveRequest>> getLeaveRequests(Authentication auth) {
-        if (authHelper.isEmployee(auth)) {
-            return ResponseEntity.ok(
-                    this.leaveRequestService.findByEmployeeId(authHelper.currentEmployeeId(auth)));
-        }
-        return ResponseEntity.ok(this.leaveRequestService.findAll());
+    public ResponseEntity<List<LeaveRequestDto>> getLeaveRequests(Authentication auth) {
+        List<LeaveRequest> requests = authHelper.isEmployee(auth)
+                ? this.leaveRequestService.findByEmployeeId(authHelper.currentEmployeeId(auth))
+                : this.leaveRequestService.findAll();
+        return ResponseEntity.ok(requests.stream().map(LeaveRequestDto::from).toList());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<LeaveRequest> getLeaveRequest(@PathVariable Integer id, Authentication auth) {
+    public ResponseEntity<LeaveRequestDto> getLeaveRequest(@PathVariable Integer id, Authentication auth) {
         return this.leaveRequestService.findById(id)
                 .map(req -> {
                     if (authHelper.isEmployee(auth)
                             && !req.getEmployeeId().equals(authHelper.currentEmployeeId(auth))) {
                         throw authHelper.forbidden();
                     }
-                    return ResponseEntity.ok(req);
+                    return ResponseEntity.ok(LeaveRequestDto.from(req));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public ResponseEntity<LeaveRequest> createLeaveRequest(@RequestBody LeaveRequest leaveRequest) {
-        return ResponseEntity.status(201).body(this.leaveRequestService.create(leaveRequest));
+    public ResponseEntity<LeaveRequestDto> createLeaveRequest(@RequestBody LeaveRequestDto leaveRequest) {
+        LeaveRequest created = this.leaveRequestService.create(leaveRequest.toEntity());
+        return ResponseEntity.status(201).body(LeaveRequestDto.from(created));
     }
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public ResponseEntity<LeaveRequest> patchLeaveRequest(@PathVariable Integer id, @RequestBody LeaveRequest leaveRequest) {
-        return this.leaveRequestService.patch(id, leaveRequest)
+    public ResponseEntity<LeaveRequestDto> patchLeaveRequest(@PathVariable Integer id, @RequestBody LeaveRequestDto leaveRequest) {
+        return this.leaveRequestService.patch(id, leaveRequest.toEntity())
+                .map(LeaveRequestDto::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

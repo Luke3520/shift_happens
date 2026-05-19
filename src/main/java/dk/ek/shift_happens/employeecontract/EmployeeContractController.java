@@ -17,58 +17,50 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EmployeeContractController {
 
-    private final EmployeeContractRepository employeeContractRepository;
+    private final EmployeeContractService employeeContractService;
     private final AuthHelper authHelper;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public List<EmployeeContract> getAll(Authentication auth) {
-        if (authHelper.isEmployee(auth)) {
-            return employeeContractRepository.findByEmployeeId(authHelper.currentEmployeeId(auth));
-        }
-        return employeeContractRepository.findAll();
+    public List<EmployeeContractDto> getAll(Authentication auth) {
+        List<EmployeeContract> contracts = authHelper.isEmployee(auth)
+                ? employeeContractService.findByEmployeeId(authHelper.currentEmployeeId(auth))
+                : employeeContractService.findAll();
+        return contracts.stream().map(EmployeeContractDto::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public EmployeeContract getById(@PathVariable Integer id, Authentication auth) {
-        EmployeeContract contract = employeeContractRepository.findById(id)
+    public EmployeeContractDto getById(@PathVariable Integer id, Authentication auth) {
+        EmployeeContract contract = employeeContractService.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         if (authHelper.isEmployee(auth)
                 && !contract.getEmployeeId().equals(authHelper.currentEmployeeId(auth))) {
             throw authHelper.forbidden();
         }
-        return contract;
+        return EmployeeContractDto.from(contract);
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     @ResponseStatus(HttpStatus.CREATED)
-    public EmployeeContract create(@RequestBody EmployeeContract contract) {
-        return employeeContractRepository.save(contract);
+    public EmployeeContractDto create(@RequestBody EmployeeContractDto contract) {
+        return EmployeeContractDto.from(employeeContractService.create(contract.toEntity()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public EmployeeContract update(@PathVariable Integer id, @RequestBody EmployeeContract details) {
-        EmployeeContract existing = employeeContractRepository.findById(id)
+    public EmployeeContractDto update(@PathVariable Integer id, @RequestBody EmployeeContractDto details) {
+        return employeeContractService.update(id, details.toEntity())
+                .map(EmployeeContractDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        existing.setEmployeeId(details.getEmployeeId());
-        existing.setDepartmentId(details.getDepartmentId());
-        existing.setContractType(details.getContractType());
-        existing.setStartDate(details.getStartDate());
-        existing.setEndDate(details.getEndDate());
-        existing.setWeeklyHours(details.getWeeklyHours());
-        existing.setSalaryAmount(details.getSalaryAmount());
-        existing.setIsActive(details.getIsActive());
-        return employeeContractRepository.save(existing);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Integer id) {
-        employeeContractRepository.deleteById(id);
+        employeeContractService.delete(id);
     }
 }

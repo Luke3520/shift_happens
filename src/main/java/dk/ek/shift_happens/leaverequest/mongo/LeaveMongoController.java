@@ -14,39 +14,37 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LeaveMongoController {
 
-    private final LeaveMongoRepository leaveMongoRepository;
+    private final LeaveMongoService leaveMongoService;
 
     @GetMapping
-    public List<LeaveDocument> getAll() {
-        return leaveMongoRepository.findAll();
+    public List<LeaveDocumentDto> getAll() {
+        return leaveMongoService.findAll().stream().map(LeaveDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public LeaveDocument getById(@PathVariable String id) {
-        return leaveMongoRepository.findById(id)
+    public LeaveDocumentDto getById(@PathVariable String id) {
+        return leaveMongoService.findById(id)
+                .map(LeaveDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
-    public LeaveDocument create(@RequestBody LeaveDocument leave) {
-        return leaveMongoRepository.save(leave);
+    public LeaveDocumentDto create(@RequestBody LeaveDocumentDto leave) {
+        return LeaveDocumentDto.from(leaveMongoService.create(leave.toEntity()));
     }
 
     @PutMapping("/{id}")
-    public LeaveDocument update(@PathVariable String id, @RequestBody LeaveDocument leave) {
-        if (!leaveMongoRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-        leave.setId(id);
-        return leaveMongoRepository.save(leave);
+    public LeaveDocumentDto update(@PathVariable String id, @RequestBody LeaveDocumentDto leave) {
+        return leaveMongoService.update(id, leave.toEntity())
+                .map(LeaveDocumentDto::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
-        if (!leaveMongoRepository.existsById(id)) {
+        if (!leaveMongoService.delete(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        leaveMongoRepository.deleteById(id);
     }
 }

@@ -14,16 +14,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WorkLocationNeo4jController {
 
-    private final WorkLocationNeo4jRepository workLocationNeo4jRepository;
+    private final WorkLocationNeo4jService workLocationNeo4jService;
 
     @GetMapping
-    public List<WorkLocationNode> getAll() {
-        return workLocationNeo4jRepository.findAll();
+    public List<WorkLocationNodeDto> getAll() {
+        return workLocationNeo4jService.findAll().stream().map(WorkLocationNodeDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public WorkLocationNode getById(@PathVariable Long id) {
-        return workLocationNeo4jRepository.findById(id)
+    public WorkLocationNodeDto getById(@PathVariable Long id) {
+        return workLocationNeo4jService.findById(id)
+                .map(WorkLocationNodeDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 }

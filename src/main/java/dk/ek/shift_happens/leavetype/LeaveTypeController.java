@@ -15,44 +15,41 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LeaveTypeController {
 
-    private final LeaveTypeRepository leaveTypeRepository;
+    private final LeaveTypeService leaveTypeService;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public List<LeaveType> getAll() {
-        return leaveTypeRepository.findAll();
+    public List<LeaveTypeDto> getAll() {
+        return leaveTypeService.findAll().stream().map(LeaveTypeDto::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public LeaveType getById(@PathVariable Integer id) {
-        return leaveTypeRepository.findById(id)
+    public LeaveTypeDto getById(@PathVariable Integer id) {
+        return leaveTypeService.findById(id)
+                .map(LeaveTypeDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     @ResponseStatus(HttpStatus.CREATED)
-    public LeaveType create(@RequestBody LeaveType leaveType) {
-        return leaveTypeRepository.save(leaveType);
+    public LeaveTypeDto create(@RequestBody LeaveTypeDto leaveType) {
+        return LeaveTypeDto.from(leaveTypeService.create(leaveType.toEntity()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public LeaveType update(@PathVariable Integer id, @RequestBody LeaveType details) {
-        LeaveType existing = leaveTypeRepository.findById(id)
+    public LeaveTypeDto update(@PathVariable Integer id, @RequestBody LeaveTypeDto details) {
+        return leaveTypeService.update(id, details.toEntity())
+                .map(LeaveTypeDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        existing.setLeaveTypeName(details.getLeaveTypeName());
-        existing.setLeaveTypeDescription(details.getLeaveTypeDescription());
-        existing.setRequiresApproval(details.getRequiresApproval());
-        existing.setIsPaidLeave(details.getIsPaidLeave());
-        return leaveTypeRepository.save(existing);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Integer id) {
-        leaveTypeRepository.deleteById(id);
+        leaveTypeService.delete(id);
     }
 }

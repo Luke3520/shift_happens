@@ -14,42 +14,37 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ShiftController {
 
-    private final ShiftRepository shiftRepository;
+    private final ShiftService shiftService;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public List<Shift> getShifts() {
-        return this.shiftRepository.findAll();
+    public List<ShiftDto> getShifts() {
+        return this.shiftService.findAll().stream().map(ShiftDto::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public Optional<Shift> getShiftById(@PathVariable Integer id) {
-        return this.shiftRepository.findById(id);
+    public Optional<ShiftDto> getShiftById(@PathVariable Integer id) {
+        return this.shiftService.findById(id).map(ShiftDto::from);
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public Shift createShift(@RequestBody Shift shift) {
-        return this.shiftRepository.save(shift);
+    public ShiftDto createShift(@RequestBody ShiftDto shift) {
+        return ShiftDto.from(this.shiftService.create(shift.toEntity()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public Shift updateShift(@PathVariable Integer id, @RequestBody Shift shiftDetails) {
-        Shift shift = this.shiftRepository.findById(id).orElseThrow();
-        shift.setDepartmentId(shiftDetails.getDepartmentId());
-        shift.setWorkLocationId(shiftDetails.getWorkLocationId());
-        shift.setShiftName(shiftDetails.getShiftName());
-        shift.setStartDatetime(shiftDetails.getStartDatetime());
-        shift.setEndDatetime(shiftDetails.getEndDatetime());
-        shift.setShiftStatus(shiftDetails.getShiftStatus());
-        return this.shiftRepository.save(shift);
+    public ShiftDto updateShift(@PathVariable Integer id, @RequestBody ShiftDto shiftDetails) {
+        return this.shiftService.update(id, shiftDetails.toEntity())
+                .map(ShiftDto::from)
+                .orElseThrow();
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     public void deleteShift(@PathVariable Integer id) {
-        this.shiftRepository.deleteById(id);
+        this.shiftService.delete(id);
     }
 }

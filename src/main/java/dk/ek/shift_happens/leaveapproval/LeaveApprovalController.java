@@ -23,48 +23,50 @@ public class LeaveApprovalController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<LeaveApproval>> getLeaveApprovals(Authentication auth) {
-        if (authHelper.isEmployee(auth)) {
-            return ResponseEntity.ok(
-                    this.leaveApprovalService.findByRequestOwner(authHelper.currentEmployeeId(auth)));
-        }
-        return ResponseEntity.ok(this.leaveApprovalService.findAll());
+    public ResponseEntity<List<LeaveApprovalDto>> getLeaveApprovals(Authentication auth) {
+        List<LeaveApproval> approvals = authHelper.isEmployee(auth)
+                ? this.leaveApprovalService.findByRequestOwner(authHelper.currentEmployeeId(auth))
+                : this.leaveApprovalService.findAll();
+        return ResponseEntity.ok(approvals.stream().map(LeaveApprovalDto::from).toList());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<LeaveApproval> getLeaveApproval(@PathVariable Integer id, Authentication auth) {
+    public ResponseEntity<LeaveApprovalDto> getLeaveApproval(@PathVariable Integer id, Authentication auth) {
         return this.leaveApprovalService.findById(id)
                 .map(approval -> {
                     if (authHelper.isEmployee(auth) && !ownsRequest(approval.getLeaveRequestId(), auth)) {
                         throw authHelper.forbidden();
                     }
-                    return ResponseEntity.ok(approval);
+                    return ResponseEntity.ok(LeaveApprovalDto.from(approval));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/request/{leaveRequestId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<LeaveApproval>> getApprovalsForRequest(@PathVariable Integer leaveRequestId,
-                                                                      Authentication auth) {
+    public ResponseEntity<List<LeaveApprovalDto>> getApprovalsForRequest(@PathVariable Integer leaveRequestId,
+                                                                         Authentication auth) {
         if (authHelper.isEmployee(auth) && !ownsRequest(leaveRequestId, auth)) {
             throw authHelper.forbidden();
         }
-        return ResponseEntity.ok(this.leaveApprovalService.findByLeaveRequestId(leaveRequestId));
+        return ResponseEntity.ok(this.leaveApprovalService.findByLeaveRequestId(leaveRequestId)
+                .stream().map(LeaveApprovalDto::from).toList());
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public ResponseEntity<LeaveApproval> createLeaveApproval(@RequestBody LeaveApproval leaveApproval) {
-        return ResponseEntity.status(201).body(this.leaveApprovalService.approve(leaveApproval));
+    public ResponseEntity<LeaveApprovalDto> createLeaveApproval(@RequestBody LeaveApprovalDto leaveApproval) {
+        LeaveApproval created = this.leaveApprovalService.approve(leaveApproval.toEntity());
+        return ResponseEntity.status(201).body(LeaveApprovalDto.from(created));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
-    public ResponseEntity<LeaveApproval> updateLeaveApproval(@PathVariable Integer id,
-                                                             @RequestBody LeaveApproval leaveApproval) {
-        return this.leaveApprovalService.update(id, leaveApproval)
+    public ResponseEntity<LeaveApprovalDto> updateLeaveApproval(@PathVariable Integer id,
+                                                                @RequestBody LeaveApprovalDto leaveApproval) {
+        return this.leaveApprovalService.update(id, leaveApproval.toEntity())
+                .map(LeaveApprovalDto::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
