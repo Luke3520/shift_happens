@@ -2,6 +2,7 @@ package dk.ek.shift_happens.leaveapproval;
 
 import dk.ek.shift_happens.auth.AuthHelper;
 import dk.ek.shift_happens.leaverequest.LeaveRequestService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Leave Approvals")
 @RestController
 @RequestMapping("/leaveapprovals")
 @RequiredArgsConstructor

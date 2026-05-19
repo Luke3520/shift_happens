@@ -1,6 +1,7 @@
 package dk.ek.shift_happens.shiftswap;
 
 import dk.ek.shift_happens.auth.AuthHelper;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,6 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+@Tag(name = "Shift Swaps")
 @RestController
 @RequestMapping("/shiftswaps")
 @RequiredArgsConstructor
