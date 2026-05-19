@@ -1,5 +1,6 @@
 package dk.ek.shift_happens.shiftswap.neo4j;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +11,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+@Tag(name = "Neo4j - Shift Swaps")
 @RestController
 @RequestMapping("/neo4j/shiftswaps")
 @RequiredArgsConstructor

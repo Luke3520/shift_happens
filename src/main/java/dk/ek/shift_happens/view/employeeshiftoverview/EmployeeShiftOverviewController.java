@@ -1,6 +1,7 @@
 package dk.ek.shift_happens.view.employeeshiftoverview;
 
 import dk.ek.shift_happens.auth.AuthHelper;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@Tag(name = "Views")
 @RestController
 @RequestMapping("/views/employee-shift-overview")
 @RequiredArgsConstructor

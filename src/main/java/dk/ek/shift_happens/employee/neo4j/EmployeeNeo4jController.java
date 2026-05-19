@@ -1,5 +1,6 @@
 package dk.ek.shift_happens.employee.neo4j;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -7,6 +8,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+@Tag(name = "Neo4j - Employees")
 @RestController
 @RequestMapping("/neo4j/employees")
 @RequiredArgsConstructor

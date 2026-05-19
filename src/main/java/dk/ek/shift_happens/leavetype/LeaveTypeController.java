@@ -1,5 +1,6 @@
 package dk.ek.shift_happens.leavetype;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -8,6 +9,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+@Tag(name = "Leave Types")
 @RestController
 @RequestMapping("/leavetypes")
 @RequiredArgsConstructor

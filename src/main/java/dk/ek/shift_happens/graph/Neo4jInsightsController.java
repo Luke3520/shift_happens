@@ -1,11 +1,13 @@
 package dk.ek.shift_happens.graph;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
+@Tag(name = "Neo4j - Insights")
 @RestController
 @RequestMapping("/neo4j/insights")
 public class Neo4jInsightsController {

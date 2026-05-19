@@ -2,6 +2,8 @@ package dk.ek.shift_happens.auth;
 
 import dk.ek.shift_happens.employee.Employee;
 import dk.ek.shift_happens.employee.EmployeeRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,6 +28,7 @@ import java.util.Map;
  *   JWT is stateless — the client simply discards the token.
  *   No server-side session to invalidate.
  */
+@Tag(name = "Authentication", description = "Public login endpoint")
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -35,6 +38,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final EmployeeRepository employeeRepository;
 
+    @Operation(summary = "Login", description = "Returns a JWT bearer token", security = {})
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         // Attempt authentication — Spring Security handles password verification

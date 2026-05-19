@@ -1,5 +1,6 @@
 package dk.ek.shift_happens.shift.mongo;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -7,6 +8,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+@Tag(name = "MongoDB - Shifts")
 @RestController
 @RequestMapping("/mongo/shifts")
 @RequiredArgsConstructor
