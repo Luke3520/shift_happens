@@ -12,41 +12,37 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JobRoleMongoController {
 
-    private final JobRoleMongoRepository jobRoleMongoRepository;
+    private final JobRoleMongoService jobRoleMongoService;
 
     @GetMapping
     public List<JobRoleDocumentDto> getAll() {
-        return jobRoleMongoRepository.findAll().stream().map(JobRoleDocumentDto::from).toList();
+        return jobRoleMongoService.findAll().stream().map(JobRoleDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
     public JobRoleDocumentDto getById(@PathVariable String id) {
-        return jobRoleMongoRepository.findById(id)
+        return jobRoleMongoService.findById(id)
                 .map(JobRoleDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
     public JobRoleDocumentDto create(@RequestBody JobRoleDocumentDto jobRole) {
-        return JobRoleDocumentDto.from(jobRoleMongoRepository.save(jobRole.toEntity()));
+        return JobRoleDocumentDto.from(jobRoleMongoService.create(jobRole.toEntity()));
     }
 
     @PutMapping("/{id}")
     public JobRoleDocumentDto update(@PathVariable String id, @RequestBody JobRoleDocumentDto jobRole) {
-        if (!jobRoleMongoRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-        JobRoleDocument entity = jobRole.toEntity();
-        entity.setId(id);
-        return JobRoleDocumentDto.from(jobRoleMongoRepository.save(entity));
+        return jobRoleMongoService.update(id, jobRole.toEntity())
+                .map(JobRoleDocumentDto::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
-        if (!jobRoleMongoRepository.existsById(id)) {
+        if (!jobRoleMongoService.delete(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        jobRoleMongoRepository.deleteById(id);
     }
 }

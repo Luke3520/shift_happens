@@ -13,18 +13,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JobRoleController {
 
-    private final JobRoleRepository jobRoleRepository;
+    private final JobRoleService jobRoleService;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public List<JobRoleDto> getAll() {
-        return jobRoleRepository.findAll().stream().map(JobRoleDto::from).toList();
+        return jobRoleService.findAll().stream().map(JobRoleDto::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public JobRoleDto getById(@PathVariable Integer id) {
-        return jobRoleRepository.findById(id)
+        return jobRoleService.findById(id)
                 .map(JobRoleDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
@@ -33,24 +33,21 @@ public class JobRoleController {
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     @ResponseStatus(HttpStatus.CREATED)
     public JobRoleDto create(@RequestBody JobRoleDto jobRole) {
-        return JobRoleDto.from(jobRoleRepository.save(jobRole.toEntity()));
+        return JobRoleDto.from(jobRoleService.create(jobRole.toEntity()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     public JobRoleDto update(@PathVariable Integer id, @RequestBody JobRoleDto details) {
-        JobRole existing = jobRoleRepository.findById(id)
+        return jobRoleService.update(id, details.toEntity())
+                .map(JobRoleDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        existing.setRoleName(details.roleName());
-        existing.setJobRoleDescription(details.jobRoleDescription());
-        existing.setIsCertificationRequired(details.isCertificationRequired());
-        return JobRoleDto.from(jobRoleRepository.save(existing));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Integer id) {
-        jobRoleRepository.deleteById(id);
+        jobRoleService.delete(id);
     }
 }

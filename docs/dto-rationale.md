@@ -84,17 +84,34 @@ Honest answer: the value varies.
 A DTO is an API-boundary concern, not a SQL-specific one — it applies equally
 to JPA entities, Mongo documents and Neo4j nodes.
 
+## Neo4j controllers
+
+The same approach was applied to the **10 Neo4j controllers**. DTOs there are
+named `XNodeDto` to avoid clashing with the JPA-side `XDto` and the Mongo-side
+`XDocumentDto`.
+
+All 10 Neo4j nodes are **flat** — no `@Relationship` mappings, no embedded
+structure — so every DTO is a flat record, no nested mirroring needed. There
+are also **no sensitive fields** (unlike Mongo, `EmployeeNode` has no
+password), so no write-only / dropped-field handling was required.
+
+Two details specific to Neo4j:
+
+- 5 of the 10 controllers are **read-only** (`getAll` / `getById`), so their
+  DTOs only need a `from()` factory — no `toEntity()`.
+- `ShiftSwapNeo4jController` also has three Cypher-query endpoints that return
+  `List<Map<String, Object>>` projections. A `Map` is a query result, not a
+  persistence model, so those endpoints are left as-is — consistent with
+  `Neo4jInsightsController`, which was excluded for the same reason.
+
 ## Known follow-ups (out of scope here)
 
-- **Neo4j controllers** still return `@Node` entities — a later branch.
-- **Mongo controllers have no service layer** — they call repositories
-  directly, whereas the assignment asks for `controllers -> services ->
-  repositories`. Not addressed in this DTO-focused change.
-- **Mongo controllers have no `@PreAuthorize`** — they are unauthenticated,
-  unlike the JPA controllers. A separate security concern.
+- **Service layer** — added in a follow-up branch; see `docs/service-layer.md`.
+- **Mongo and Neo4j controllers have no `@PreAuthorize`** — they are
+  unauthenticated, unlike the JPA controllers. A separate security concern.
 
 ## Scope
 
-Migrated: the **17 SQL/JPA controllers** and the **8 MongoDB controllers**.
-`AuthController` already uses POJOs; `MigrationController` and
-`Neo4jInsightsController` do not expose entities.
+Migrated: the **17 SQL/JPA controllers**, the **8 MongoDB controllers**, and
+the **10 Neo4j controllers**. `AuthController` already uses POJOs;
+`MigrationController` and `Neo4jInsightsController` do not expose entities.

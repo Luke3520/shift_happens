@@ -12,16 +12,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DepartmentNeo4jController {
 
-    private final DepartmentNeo4jRepository departmentNeo4jRepository;
+    private final DepartmentNeo4jService departmentNeo4jService;
 
     @GetMapping
-    public List<DepartmentNode> getAll() {
-        return departmentNeo4jRepository.findAll();
+    public List<DepartmentNodeDto> getAll() {
+        return departmentNeo4jService.findAll().stream().map(DepartmentNodeDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public DepartmentNode getById(@PathVariable Long id) {
-        return departmentNeo4jRepository.findById(id)
+    public DepartmentNodeDto getById(@PathVariable Long id) {
+        return departmentNeo4jService.findById(id)
+                .map(DepartmentNodeDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 }

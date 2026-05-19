@@ -5,6 +5,9 @@ import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -12,7 +15,100 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ShiftSwapNeo4jService {
 
+    private final ShiftSwapNeo4jRepository shiftSwapNeo4jRepository;
     private final Neo4jClient neo4jClient;
+
+    public List<ShiftSwapNode> findAll() {
+        return shiftSwapNeo4jRepository.findAll();
+    }
+
+    public Optional<ShiftSwapNode> findById(Long id) {
+        return shiftSwapNeo4jRepository.findById(id);
+    }
+
+    /**
+     * Returns swap candidates for a shift: active employees who hold a required
+     * role, work in the shift's department, and have no conflicting assignment.
+     */
+    public List<Map<String, Object>> findSwapCandidates(Integer shiftId) {
+        String cypher = """
+                MATCH (target:Shift {shiftId: $shiftId})-[:SHIFT_IN_DEPT]->(targetDepartment:Department)
+                MATCH (target)-[:REQUIRES_ROLE]->(requiredRole:JobRole)
+                MATCH (candidate:Employee)-[:HAS_JOB_ROLE]->(requiredRole)
+                MATCH (candidate)-[:WORKS_IN_DEPT]->(targetDepartment)
+                WHERE coalesce(candidate.employmentStatus, '') = 'ACTIVE'
+                  AND NOT EXISTS {
+                      MATCH (candidate)-[:ASSIGNED_TO_SHIFT]->(target)
+                  }
+                  AND NOT EXISTS {
+                      MATCH (candidate)-[:ASSIGNED_TO_SHIFT]->(other:Shift)
+                      WHERE other.startDatetime < target.endDatetime
+                        AND other.endDatetime > target.startDatetime
+                  }
+                OPTIONAL MATCH (candidate)-[:WORKS_AT_LOCATION]->(location:WorkLocation)
+                  WITH target, targetDepartment, candidate, location,
+                     collect(DISTINCT requiredRole.roleName) AS matchingRoles
+                RETURN target.shiftId AS shiftId,
+                       target.shiftName AS shiftName,
+                       candidate.employeeId AS employeeId,
+                       candidate.employeeNumber AS employeeNumber,
+                       candidate.firstName AS firstName,
+                       candidate.lastName AS lastName,
+                       candidate.email AS email,
+                      targetDepartment.departmentName AS department,
+                       location.locationName AS location,
+                       matchingRoles
+                ORDER BY candidate.firstName, candidate.lastName
+                """;
+        return runCandidateQuery(cypher, shiftId);
+    }
+
+    /**
+     * As {@link #findSwapCandidates}, but additionally constrained to candidates
+     * who work at the shift's location.
+     */
+    public List<Map<String, Object>> findSwapCandidatesSameDepartmentAndLocation(Integer shiftId) {
+        String cypher = """
+                MATCH (target:Shift {shiftId: $shiftId})-[:SHIFT_IN_DEPT]->(targetDepartment:Department)
+                MATCH (target)-[:SHIFT_AT_LOCATION]->(targetLocation:WorkLocation)
+                MATCH (target)-[:REQUIRES_ROLE]->(requiredRole:JobRole)
+                MATCH (candidate:Employee)-[:HAS_JOB_ROLE]->(requiredRole)
+                MATCH (candidate)-[:WORKS_IN_DEPT]->(targetDepartment)
+                MATCH (candidate)-[:WORKS_AT_LOCATION]->(targetLocation)
+                WHERE coalesce(candidate.employmentStatus, '') = 'ACTIVE'
+                  AND NOT EXISTS {
+                      MATCH (candidate)-[:ASSIGNED_TO_SHIFT]->(target)
+                  }
+                  AND NOT EXISTS {
+                      MATCH (candidate)-[:ASSIGNED_TO_SHIFT]->(other:Shift)
+                      WHERE other.startDatetime < target.endDatetime
+                        AND other.endDatetime > target.startDatetime
+                  }
+                WITH target, targetDepartment, targetLocation, candidate,
+                     collect(DISTINCT requiredRole.roleName) AS matchingRoles
+                RETURN target.shiftId AS shiftId,
+                       target.shiftName AS shiftName,
+                       candidate.employeeId AS employeeId,
+                       candidate.employeeNumber AS employeeNumber,
+                       candidate.firstName AS firstName,
+                       candidate.lastName AS lastName,
+                       candidate.email AS email,
+                       targetDepartment.departmentName AS department,
+                       targetLocation.locationName AS location,
+                       matchingRoles
+                ORDER BY candidate.firstName, candidate.lastName
+                """;
+        return runCandidateQuery(cypher, shiftId);
+    }
+
+    private List<Map<String, Object>> runCandidateQuery(String cypher, Integer shiftId) {
+        Collection<Map<String, Object>> rows = neo4jClient.query(cypher)
+                .bind(shiftId).to("shiftId")
+                .fetch()
+                .all();
+
+        return new ArrayList<>(rows);
+    }
 
     /**
      * Executes a shift swap inside a single Neo4j transaction:
