@@ -12,39 +12,37 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ShiftMongoController {
 
-    private final ShiftMongoRepository shiftMongoRepository;
+    private final ShiftMongoService shiftMongoService;
 
     @GetMapping
-    public List<ShiftDocument> getAll() {
-        return shiftMongoRepository.findAll();
+    public List<ShiftDocumentDto> getAll() {
+        return shiftMongoService.findAll().stream().map(ShiftDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public ShiftDocument getById(@PathVariable Integer id) {
-        return shiftMongoRepository.findById(id)
+    public ShiftDocumentDto getById(@PathVariable Integer id) {
+        return shiftMongoService.findById(id)
+                .map(ShiftDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
-    public ShiftDocument create(@RequestBody ShiftDocument shift) {
-        return shiftMongoRepository.save(shift);
+    public ShiftDocumentDto create(@RequestBody ShiftDocumentDto shift) {
+        return ShiftDocumentDto.from(shiftMongoService.create(shift.toEntity()));
     }
 
     @PutMapping("/{id}")
-    public ShiftDocument update(@PathVariable Integer id, @RequestBody ShiftDocument shift) {
-        if (!shiftMongoRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-        shift.setShiftId(id);
-        return shiftMongoRepository.save(shift);
+    public ShiftDocumentDto update(@PathVariable Integer id, @RequestBody ShiftDocumentDto shift) {
+        return shiftMongoService.update(id, shift.toEntity())
+                .map(ShiftDocumentDto::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Integer id) {
-        if (!shiftMongoRepository.existsById(id)) {
+        if (!shiftMongoService.delete(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        shiftMongoRepository.deleteById(id);
     }
 }

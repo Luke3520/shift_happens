@@ -15,7 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ShiftSwapController {
 
-    private final ShiftSwapRepository shiftSwapRepository;
+    private final ShiftSwapService shiftSwapService;
     private final AuthHelper authHelper;
 
     @GetMapping
@@ -24,9 +24,9 @@ public class ShiftSwapController {
         List<ShiftSwap> swaps;
         if (authHelper.isEmployee(auth)) {
             Integer self = authHelper.currentEmployeeId(auth);
-            swaps = shiftSwapRepository.findByEmployeeFromIdOrEmployeeToId(self, self);
+            swaps = shiftSwapService.findByEmployee(self);
         } else {
-            swaps = this.shiftSwapRepository.findAll();
+            swaps = shiftSwapService.findAll();
         }
         return swaps.stream().map(ShiftSwapDto::from).toList();
     }
@@ -34,7 +34,7 @@ public class ShiftSwapController {
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ShiftSwapDto getShiftSwapById(@PathVariable Integer id, Authentication auth) {
-        ShiftSwap swap = shiftSwapRepository.findById(id)
+        ShiftSwap swap = shiftSwapService.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (authHelper.isEmployee(auth)) {
             Integer self = authHelper.currentEmployeeId(auth);
@@ -48,25 +48,20 @@ public class ShiftSwapController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     public ShiftSwapDto createShiftSwap(@RequestBody ShiftSwapDto shiftSwap) {
-        return ShiftSwapDto.from(this.shiftSwapRepository.save(shiftSwap.toEntity()));
+        return ShiftSwapDto.from(shiftSwapService.create(shiftSwap.toEntity()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     public ShiftSwapDto updateShiftSwap(@PathVariable Integer id, @RequestBody ShiftSwapDto shiftSwapDetails) {
-        ShiftSwap shiftSwap = this.shiftSwapRepository.findById(id).orElseThrow();
-        shiftSwap.setOriginalShiftAssignmentId(shiftSwapDetails.originalShiftAssignmentId());
-        shiftSwap.setEmployeeFromId(shiftSwapDetails.employeeFromId());
-        shiftSwap.setEmployeeToId(shiftSwapDetails.employeeToId());
-        shiftSwap.setSwapStatus(shiftSwapDetails.swapStatus());
-        shiftSwap.setRequestDatetime(shiftSwapDetails.requestDatetime());
-        shiftSwap.setReason(shiftSwapDetails.reason());
-        return ShiftSwapDto.from(this.shiftSwapRepository.save(shiftSwap));
+        return shiftSwapService.update(id, shiftSwapDetails.toEntity())
+                .map(ShiftSwapDto::from)
+                .orElseThrow();
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     public void deleteShiftSwap(@PathVariable Integer id) {
-        this.shiftSwapRepository.deleteById(id);
+        shiftSwapService.delete(id);
     }
 }

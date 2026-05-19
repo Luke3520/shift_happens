@@ -12,39 +12,37 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LeaveTypeMongoController {
 
-    private final LeaveTypeMongoRepository leaveTypeMongoRepository;
+    private final LeaveTypeMongoService leaveTypeMongoService;
 
     @GetMapping
-    public List<LeaveTypeDocument> getAll() {
-        return leaveTypeMongoRepository.findAll();
+    public List<LeaveTypeDocumentDto> getAll() {
+        return leaveTypeMongoService.findAll().stream().map(LeaveTypeDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public LeaveTypeDocument getById(@PathVariable String id) {
-        return leaveTypeMongoRepository.findById(id)
+    public LeaveTypeDocumentDto getById(@PathVariable String id) {
+        return leaveTypeMongoService.findById(id)
+                .map(LeaveTypeDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
-    public LeaveTypeDocument create(@RequestBody LeaveTypeDocument leaveType) {
-        return leaveTypeMongoRepository.save(leaveType);
+    public LeaveTypeDocumentDto create(@RequestBody LeaveTypeDocumentDto leaveType) {
+        return LeaveTypeDocumentDto.from(leaveTypeMongoService.create(leaveType.toEntity()));
     }
 
     @PutMapping("/{id}")
-    public LeaveTypeDocument update(@PathVariable String id, @RequestBody LeaveTypeDocument leaveType) {
-        if (!leaveTypeMongoRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-        leaveType.setId(id);
-        return leaveTypeMongoRepository.save(leaveType);
+    public LeaveTypeDocumentDto update(@PathVariable String id, @RequestBody LeaveTypeDocumentDto leaveType) {
+        return leaveTypeMongoService.update(id, leaveType.toEntity())
+                .map(LeaveTypeDocumentDto::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
-        if (!leaveTypeMongoRepository.existsById(id)) {
+        if (!leaveTypeMongoService.delete(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        leaveTypeMongoRepository.deleteById(id);
     }
 }

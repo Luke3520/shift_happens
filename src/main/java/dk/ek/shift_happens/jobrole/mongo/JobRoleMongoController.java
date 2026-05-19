@@ -12,39 +12,37 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JobRoleMongoController {
 
-    private final JobRoleMongoRepository jobRoleMongoRepository;
+    private final JobRoleMongoService jobRoleMongoService;
 
     @GetMapping
-    public List<JobRoleDocument> getAll() {
-        return jobRoleMongoRepository.findAll();
+    public List<JobRoleDocumentDto> getAll() {
+        return jobRoleMongoService.findAll().stream().map(JobRoleDocumentDto::from).toList();
     }
 
     @GetMapping("/{id}")
-    public JobRoleDocument getById(@PathVariable String id) {
-        return jobRoleMongoRepository.findById(id)
+    public JobRoleDocumentDto getById(@PathVariable String id) {
+        return jobRoleMongoService.findById(id)
+                .map(JobRoleDocumentDto::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
-    public JobRoleDocument create(@RequestBody JobRoleDocument jobRole) {
-        return jobRoleMongoRepository.save(jobRole);
+    public JobRoleDocumentDto create(@RequestBody JobRoleDocumentDto jobRole) {
+        return JobRoleDocumentDto.from(jobRoleMongoService.create(jobRole.toEntity()));
     }
 
     @PutMapping("/{id}")
-    public JobRoleDocument update(@PathVariable String id, @RequestBody JobRoleDocument jobRole) {
-        if (!jobRoleMongoRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-        jobRole.setId(id);
-        return jobRoleMongoRepository.save(jobRole);
+    public JobRoleDocumentDto update(@PathVariable String id, @RequestBody JobRoleDocumentDto jobRole) {
+        return jobRoleMongoService.update(id, jobRole.toEntity())
+                .map(JobRoleDocumentDto::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
-        if (!jobRoleMongoRepository.existsById(id)) {
+        if (!jobRoleMongoService.delete(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        jobRoleMongoRepository.deleteById(id);
     }
 }
