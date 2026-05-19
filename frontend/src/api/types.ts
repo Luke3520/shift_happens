@@ -7,7 +7,6 @@ export interface LoginResponse {
   firstName: string;
   lastName: string;
   email: string;
-  roleId: number;
   roleName: RoleName;
 }
 
@@ -19,7 +18,7 @@ export interface Employee {
   firstName: string | null;
   lastName: string | null;
   email: string;
-  fkUserRoleId: number;
+  userRole: RoleName;
   phoneNumber: string | null;
   hireDate: string | null;
   employmentStatus: string | null;

@@ -114,7 +114,7 @@ public class MigrationService {
         return new MigrationResult(
                 mongo.employees(), mongo.shifts(), mongo.departments(), mongo.leaveDocuments(),
                 neo4j.neo4jEmployees(), neo4j.neo4jDepartments(), neo4j.neo4jWorkLocations(),
-                neo4j.neo4jShifts(), neo4j.neo4jJobRoles(), neo4j.neo4jShiftSwaps(),
+                neo4j.neo4jShifts(), neo4j.neo4jJobRoles(), neo4j.neo4jShiftSwaps(), neo4j.neo4jShiftAssignments(),
                 neo4j.neo4jLeaveTypes(), neo4j.neo4jLeaveRequests(), neo4j.neo4jLeaveApprovals(),
                 neo4j.neo4jShiftApprovals(), neo4j.neo4jShiftSwapApprovals(),
                 neo4j.neo4jLeaveLedgers(), neo4j.neo4jEmployeeContracts(),
@@ -124,16 +124,18 @@ public class MigrationService {
 
     public MigrationResult migrateToMongo() {
         List<String> errors = new ArrayList<>();
-        int employees = 0, shifts = 0, departments = 0, leave = 0, audit_logs = 0;
-        try { audit_logs   = migrateAuditLogsToMongo(); }   catch (Exception e) { log.error("mongo:audit_logs failed",   e); errors.add("mongo:audit_logs — "   + e.getMessage()); }
-        try { employees   = migrateEmployeesToMongo(); }   catch (Exception e) { log.error("mongo:employees failed",   e); errors.add("mongo:employees — "   + e.getMessage()); }
-        try { shifts      = migrateShiftsToMongo(); }      catch (Exception e) { log.error("mongo:shifts failed",      e); errors.add("mongo:shifts — "      + e.getMessage()); }
-        try { departments = migrateDepartmentsToMongo(); } catch (Exception e) { log.error("mongo:departments failed", e); errors.add("mongo:departments — " + e.getMessage()); }
-        try { leave       = migrateLeaveToMongo(); }       catch (Exception e) { log.error("mongo:leave failed",       e); errors.add("mongo:leave — "       + e.getMessage()); }
-        try { migrateJobRolesToMongo(); }      catch (Exception e) { log.error("mongo:job_roles failed",      e); errors.add("mongo:job_roles — "      + e.getMessage()); }
-        try { migrateWorkLocationsToMongo(); } catch (Exception e) { log.error("mongo:work_locations failed", e); errors.add("mongo:work_locations — " + e.getMessage()); }
-        try { migrateLeaveTypesToMongo(); }    catch (Exception e) { log.error("mongo:leave_types failed",    e); errors.add("mongo:leave_types — "    + e.getMessage()); }
-        return new MigrationResult(audit_logs, employees, shifts, departments, leave, 0, 0, 0, 0, 0, errors);
+        int auditLogs = 0, employees = 0, shifts = 0, departments = 0, leave = 0;
+
+        try { auditLogs   = migrateAuditLogsToMongo(); }    catch (Exception e) { log.error("mongo:audit_logs failed",     e); errors.add("mongo:audit_logs — "     + e.getMessage()); }
+        try { employees   = migrateEmployeesToMongo(); }    catch (Exception e) { log.error("mongo:employees failed",      e); errors.add("mongo:employees — "      + e.getMessage()); }
+        try { shifts      = migrateShiftsToMongo(); }       catch (Exception e) { log.error("mongo:shifts failed",         e); errors.add("mongo:shifts — "         + e.getMessage()); }
+        try { departments = migrateDepartmentsToMongo(); }  catch (Exception e) { log.error("mongo:departments failed",    e); errors.add("mongo:departments — "    + e.getMessage()); }
+        try { leave       = migrateLeaveToMongo(); }        catch (Exception e) { log.error("mongo:leave failed",          e); errors.add("mongo:leave — "          + e.getMessage()); }
+        try { migrateJobRolesToMongo(); }                   catch (Exception e) { log.error("mongo:job_roles failed",      e); errors.add("mongo:job_roles — "      + e.getMessage()); }
+        try { migrateWorkLocationsToMongo(); }              catch (Exception e) { log.error("mongo:work_locations failed", e); errors.add("mongo:work_locations — " + e.getMessage()); }
+        try { migrateLeaveTypesToMongo(); }                 catch (Exception e) { log.error("mongo:leave_types failed",    e); errors.add("mongo:leave_types — "    + e.getMessage()); }
+
+        return new MigrationResult(employees, shifts, departments, leave, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, errors);
     }
 
     public MigrationResult migrateToNeo4j() {
@@ -645,63 +647,6 @@ public class MigrationService {
             return ref;
         }).toList());
         return doc;
-    }
-
-    // -------------------------------------------------------------------------
-    // Mappers — Neo4j
-    // -------------------------------------------------------------------------
-
-    private EmployeeNode toEmployeeNode(Employee e) {
-        EmployeeNode node = new EmployeeNode();
-        node.setEmployeeId(e.getEmployeeId());
-        node.setEmployeeNumber(e.getEmployeeNumber());
-        node.setFirstName(e.getFirstName());
-        node.setLastName(e.getLastName());
-        node.setEmail(e.getEmail());
-        node.setUserRole(e.getUserRole() != null ? e.getUserRole().getRoleName() : null);
-        node.setPhoneNumber(e.getPhoneNumber());
-        node.setHireDate(e.getHireDate());
-        node.setEmploymentStatus(e.getEmploymentStatus());
-        node.setPrimaryWorkLocationId(e.getPrimaryWorkLocationId());
-        return node;
-    }
-
-    private DepartmentNode toDepartmentNode(Department d) {
-        DepartmentNode node = new DepartmentNode();
-        node.setDepartmentId(d.getDepartmentId());
-        node.setDepartmentName(d.getDepartmentName());
-        node.setIsActive(d.getIsActive());
-        return node;
-    }
-
-    private WorkLocationNode toWorkLocationNode(WorkLocation w) {
-        WorkLocationNode node = new WorkLocationNode();
-        node.setWorkLocationId(w.getWorkLocationId());
-        node.setLocationName(w.getLocationName());
-        node.setCity(w.getCity());
-        node.setCountry(w.getCountry());
-        node.setTimezone(w.getTimezone());
-        node.setIsActive(w.getIsActive());
-        return node;
-    }
-
-    private ShiftNode toShiftNode(Shift s) {
-        ShiftNode node = new ShiftNode();
-        node.setShiftId(s.getShiftId());
-        node.setShiftName(s.getShiftName());
-        node.setStartDatetime(s.getStartDatetime());
-        node.setEndDatetime(s.getEndDatetime());
-        node.setShiftStatus(s.getShiftStatus());
-        return node;
-    }
-
-    private JobRoleNode toJobRoleNode(JobRole jr) {
-        JobRoleNode node = new JobRoleNode();
-        node.setJobRoleId(jr.getJobRoleId());
-        node.setRoleName(jr.getRoleName());
-        node.setJobRoleDescription(jr.getJobRoleDescription());
-        node.setIsCertificationRequired(jr.getIsCertificationRequired());
-        return node;
     }
 
     // -------------------------------------------------------------------------
