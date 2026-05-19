@@ -5,9 +5,8 @@ import {
   getEmployee,
   updateEmployee,
 } from '../../api/employees';
-import { listUserRoles } from '../../api/userRoles';
 import { listWorkLocations } from '../../api/workLocations';
-import type { NewEmployee, UserRole, WorkLocation } from '../../api/types';
+import type { NewEmployee, WorkLocation } from '../../api/types';
 import { ApiError } from '../../api/types';
 import { useAuth } from '../../auth/useAuth';
 import { canWrite } from '../../auth/roles';
@@ -17,7 +16,7 @@ const EMPTY_FORM: NewEmployee = {
   firstName: '',
   lastName: '',
   email: '',
-  fkUserRoleId: 2,
+  userRole: 'Employee',
   phoneNumber: '',
   hireDate: null,
   employmentStatus: 'ACTIVE',
@@ -35,7 +34,6 @@ export default function EmployeeFormPage() {
   const mayWrite = canWrite(user?.roleName);
 
   const [form, setForm] = useState<NewEmployee>(EMPTY_FORM);
-  const [roles, setRoles] = useState<UserRole[]>([]);
   const [locations, setLocations] = useState<WorkLocation[]>([]);
   const [loading, setLoading] = useState(!isNew);
   const [submitting, setSubmitting] = useState(false);
@@ -43,10 +41,9 @@ export default function EmployeeFormPage() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([listUserRoles(), listWorkLocations()])
-      .then(([rs, ls]) => {
+    listWorkLocations()
+      .then((ls) => {
         if (cancelled) return;
-        setRoles(rs);
         setLocations(ls);
       })
       .catch(() => {
@@ -69,7 +66,7 @@ export default function EmployeeFormPage() {
           firstName: emp.firstName,
           lastName: emp.lastName,
           email: emp.email,
-          fkUserRoleId: emp.fkUserRoleId,
+          userRole: emp.userRole,
           phoneNumber: emp.phoneNumber,
           hireDate: emp.hireDate,
           employmentStatus: emp.employmentStatus,
@@ -165,15 +162,13 @@ export default function EmployeeFormPage() {
         <label className="form-field">
           <span>Role</span>
           <select
-            value={form.fkUserRoleId}
-            onChange={(e) => update('fkUserRoleId', Number(e.target.value))}
+            value={form.userRole}
+            onChange={(e) => update('userRole', e.target.value)}
             disabled={!mayWrite}
           >
-            {roles.map((r) => (
-              <option key={r.userRoleId} value={r.userRoleId}>
-                {r.userRoleName}
-              </option>
-            ))}
+            <option value="Administrator">Administrator</option>
+            <option value="Manager">Manager</option>
+            <option value="Employee">Employee</option>
           </select>
         </label>
         <label className="form-field">
