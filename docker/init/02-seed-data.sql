@@ -203,19 +203,68 @@ FROM employee e;
 -- =========================================
 -- SHIFTS (100)
 -- =========================================
-INSERT INTO shift (department_id, work_location_id,
-             shift_name, start_datetime, end_datetime, shift_status)
-WITH RECURSIVE seq AS (SELECT 1 n
-              UNION ALL
-              SELECT n + 1
-              FROM seq
-              WHERE n < @entities_to_generate)
-SELECT 1 + MOD(n, 20), -- 20 departments
-    1 + MOD(n, 10), -- 10 work locations
-    CONCAT('Shift ', n),
-    DATE_ADD(CURDATE(), INTERVAL MOD(n, 14) DAY) + INTERVAL (MOD(n, 24)) HOUR,
-    DATE_ADD(CURDATE(), INTERVAL MOD(n, 14) DAY) + INTERVAL (MOD(n, 24) + 8) HOUR,
+INSERT INTO shift (
+    department_id,
+    work_location_id,
+    shift_name,
+    start_datetime,
+    end_datetime,
+    shift_status
+)
+WITH RECURSIVE seq AS (
+    SELECT 1 n
+    UNION ALL
+    SELECT n + 1
+    FROM seq
+    WHERE n < @entities_to_generate
+)
+SELECT
+    1 + MOD(n, 20),
+    1 + MOD(n, 10),
+
+    CONCAT(
+            ELT(1 + MOD(n, 20),
+                'Akut',
+                'Intensiv',
+                'Kirurgisk',
+                'Medicinsk',
+                'Børneafdeling',
+                'Ortopæd',
+                'Onkologi',
+                'Radiologi',
+                'Fysioterapi',
+                'Psykiatri',
+                'Ambulant',
+                'Laboratorium',
+                'IT',
+                'Administration',
+                'Reception',
+                'Rengøring',
+                'Kantine',
+                'Transport',
+                'Lager',
+                'Sikkerhed'
+            ),
+            ' ',
+            ELT(
+                    1 + MOD(n, 6),
+                    'Dagvagt',
+                    'Aftenvagt',
+                    'Nattevagt',
+                    'Weekendvagt',
+                    'Beredskabsvagt',
+                    'Morgenvagt'
+            )
+    ),
+
+    DATE_ADD(CURDATE(), INTERVAL MOD(n, 14) DAY)
+        + INTERVAL ELT(1 + MOD(n,3), 7, 15, 23) HOUR,
+
+    DATE_ADD(CURDATE(), INTERVAL MOD(n, 14) DAY)
+        + INTERVAL ELT(1 + MOD(n,3), 15, 23, 7) HOUR,
+
     ELT(1 + MOD(n, 3), 'PLANNED', 'COMPLETED', 'CANCELLED')
+
 FROM seq;
 
 -- =========================================
@@ -244,46 +293,189 @@ FROM shift s;
 -- =========================================
 -- SHIFT APPROVALS (~70 mixed decisions)
 -- =========================================
-INSERT INTO shift_approval (shift_assignment_id, approver_employee_id,
-                            decision, approval_comment, decision_datetime)
-SELECT shift_assignment_id,
-       1 + MOD(shift_assignment_id + 5, @entities_to_generate),
-       ELT(1 + MOD(shift_assignment_id, 3), 'APPROVED', 'REJECTED', 'PENDING'),
-       'Auto decision',
-       NOW()
-FROM shift_assignment
-WHERE shift_assignment_id <= 70;
+INSERT INTO shift_approval (
+    shift_assignment_id,
+    approver_employee_id,
+    decision,
+    approval_comment,
+    decision_datetime
+)
+SELECT
+    sa.shift_assignment_id,
+
+    -- approver is typically someone senior-ish
+    1 + MOD(sa.shift_assignment_id + FLOOR(RAND() * 15), @entities_to_generate),
+
+    -- approvals should dominate
+    CASE
+        WHEN RAND() < 0.78 THEN 'APPROVED'
+        WHEN RAND() < 0.92 THEN 'PENDING'
+        ELSE 'REJECTED'
+        END AS decision,
+
+    -- realistic comments
+    CASE
+        WHEN RAND() < 0.15 THEN NULL
+
+        WHEN RAND() < 0.75 THEN
+            ELT(
+                    1 + FLOOR(RAND() * 5),
+                    'Approved by department manager',
+                    'Coverage confirmed',
+                    'Shift requirement fulfilled',
+                    'Employee available for assignment',
+                    'Staffing level acceptable'
+            )
+
+        WHEN RAND() < 0.90 THEN
+            ELT(
+                    1 + FLOOR(RAND() * 4),
+                    'Awaiting final staffing confirmation',
+                    'Pending department review',
+                    'Needs schedule coordination',
+                    'Requires senior approval'
+            )
+
+        ELSE
+            ELT(
+                    1 + FLOOR(RAND() * 5),
+                    'Insufficient staffing budget',
+                    'Employee lacks required certification',
+                    'Scheduling conflict detected',
+                    'Maximum weekly hours exceeded',
+                    'Assignment no longer required'
+            )
+        END AS approval_comment,
+
+    -- approval sometime after assignment
+    sa.assigned_datetime + INTERVAL FLOOR(1 + RAND() * 48) HOUR
+
+FROM shift_assignment sa
+WHERE sa.shift_assignment_id <= 70;
 
 -- =========================================
 -- SHIFT SWAPS (~50)
 -- =========================================
-INSERT INTO shift_swap (original_shift_assignment_id,
-                        employee_from_id,
-                        employee_to_id,
-                        swap_status,
-                        request_datetime,
-                        reason)
-SELECT sa.shift_assignment_id,
-       sa.employee_id                                                               AS employee_from_id,
-       1 + MOD(sa.employee_id + 5, @entities_to_generate)                           AS employee_to_id, -- simple offset to avoid same employee
-       ELT(1 + MOD(sa.shift_assignment_id, 3), 'REQUESTED', 'APPROVED', 'DECLINED') AS swap_status,
-       NOW() - INTERVAL MOD(sa.shift_assignment_id, 5) DAY                          AS request_datetime,
-       'Personal reason'                                                            AS reason
+INSERT INTO shift_swap (
+    original_shift_assignment_id,
+    employee_from_id,
+    employee_to_id,
+    swap_status,
+    request_datetime,
+    reason
+)
+SELECT
+    sa.shift_assignment_id,
+    sa.employee_id AS employee_from_id,
+
+    -- pick another employee in same "pool", less predictable than offset
+    (
+        SELECT e.employee_id
+        FROM employee e
+        WHERE e.employee_id <> sa.employee_id
+        ORDER BY RAND()
+        LIMIT 1
+    ) AS employee_to_id,
+
+    -- realistic distribution: most requests are pending or approved
+    CASE
+        WHEN RAND() < 0.55 THEN 'REQUESTED'
+        WHEN RAND() < 0.85 THEN 'APPROVED'
+        ELSE 'DECLINED'
+        END AS swap_status,
+
+    -- swaps usually requested BEFORE shift, sometimes last-minute
+    sa.assigned_datetime
+        - INTERVAL FLOOR(1 + RAND() * 72) HOUR AS request_datetime,
+
+    -- realistic reasons instead of generic text
+    CASE FLOOR(RAND() * 8)
+        WHEN 0 THEN 'Childcare conflict'
+        WHEN 1 THEN 'Medical appointment'
+        WHEN 2 THEN 'Exam / education'
+        WHEN 3 THEN 'Family obligation'
+        WHEN 4 THEN 'Feeling unwell'
+        WHEN 5 THEN 'Transport issues'
+        WHEN 6 THEN 'Requested day off overlap'
+        WHEN 7 THEN 'Personal emergency'
+        END AS reason
+
 FROM shift_assignment sa
-WHERE sa.shift_assignment_id <= 50;
+
+-- only a subset actually creates swaps (real systems are sparse)
+WHERE sa.shift_assignment_id <= 50
+  AND RAND() < 0.65;
 
 -- =========================================
 -- SHIFT SWAP APPROVALS (~40)
 -- =========================================
-INSERT INTO shift_swap_approval (shift_swap_id, approver_employee_id,
-                                 decision, shift_swap_comment, decision_datetime)
-SELECT shift_swap_id,
-       1 + MOD(shift_swap_id + 10, @entities_to_generate),
-       ELT(1 + MOD(shift_swap_id, 3), 'APPROVED', 'REJECTED', 'PENDING'),
-       'Swap review',
-       NOW()
-FROM shift_swap
-WHERE shift_swap_id <= 40;
+INSERT INTO shift_swap_approval (
+    shift_swap_id,
+    approver_employee_id,
+    decision,
+    shift_swap_comment,
+    decision_datetime
+)
+SELECT
+    ss.shift_swap_id,
+
+    -- approver should not be same person requesting swap
+    (
+        SELECT e.employee_id
+        FROM employee e
+        WHERE e.employee_id <> ss.employee_from_id
+        ORDER BY RAND()
+        LIMIT 1
+    ) AS approver_employee_id,
+
+    -- decision depends loosely on current swap status
+    CASE
+        WHEN ss.swap_status = 'DECLINED' THEN 'REJECTED'
+
+        WHEN ss.swap_status = 'REQUESTED' THEN
+            CASE
+                WHEN RAND() < 0.70 THEN 'APPROVED'
+                WHEN RAND() < 0.20 THEN 'PENDING'
+                ELSE 'REJECTED'
+                END
+
+        WHEN ss.swap_status = 'APPROVED' THEN 'APPROVED'
+        ELSE 'PENDING'
+        END AS decision,
+
+    -- comments are often missing or short
+    CASE
+        WHEN RAND() < 0.20 THEN NULL
+
+        WHEN RAND() < 0.70 THEN
+            ELT(
+                    1 + FLOOR(RAND() * 5),
+                    'Approved by shift coordinator',
+                    'Coverage confirmed for department',
+                    'No staffing conflicts detected',
+                    'Within allowed weekly hours',
+                    'Manager approval granted'
+            )
+
+        ELSE
+            ELT(
+                    1 + FLOOR(RAND() * 5),
+                    'Insufficient coverage for requested swap',
+                    'Request conflicts with staffing plan',
+                    'Requires senior approval',
+                    'Not compliant with weekend staffing rules',
+                    'Employee not eligible for swap at this time'
+            )
+        END AS shift_swap_comment,
+
+    -- realistic timing: approval after request
+    CASE
+        WHEN ss.swap_status = 'PENDING' THEN NULL
+        ELSE ss.request_datetime + INTERVAL FLOOR(1 + RAND() * 48) HOUR
+        END AS decision_datetime
+
+FROM shift_swap ss
+WHERE ss.shift_swap_id <= 40;
 
 -- =========================================
 -- LEAVE TYPES (REALISTIC SMALL SET)
@@ -302,66 +494,286 @@ VALUES ('Vacation', 'Paid annual leave', 1, 1),
 -- =========================================
 -- LEAVE REQUESTS (100)
 -- =========================================
-INSERT INTO leave_request (employee_id, leave_type_id,
-                           start_date, end_date,
-                           request_status, reason, requested_datetime)
-SELECT employee_id,
-       1 + MOD(employee_id, 8),
-       CURDATE() - INTERVAL MOD(employee_id, 30) DAY,
-       CURDATE() + INTERVAL MOD(employee_id, 10) DAY,
-       ELT(1 + MOD(employee_id, 3), 'PENDING', 'APPROVED', 'REJECTED'),
-       'Personal leave',
-       NOW() - INTERVAL MOD(employee_id, 5) DAY
-FROM employee;
+INSERT INTO leave_request (
+    employee_id,
+    leave_type_id,
+    start_date,
+    end_date,
+    request_status,
+    reason,
+    requested_datetime
+)
+SELECT
+    e.employee_id,
+
+    lt.leave_type_id,
+
+    -- start date depends on leave type realism
+    CASE
+        WHEN lt.leave_type_name = 'Vacation'
+            THEN CURDATE() + INTERVAL (10 + MOD(e.employee_id, 120)) DAY
+
+        WHEN lt.leave_type_name = 'Sick Leave'
+            THEN CURDATE() - INTERVAL MOD(e.employee_id, 7) DAY
+
+        WHEN lt.leave_type_name IN ('Maternity', 'Paternity')
+            THEN CURDATE() + INTERVAL (30 + MOD(e.employee_id, 200)) DAY
+
+        ELSE
+            CURDATE() + INTERVAL (5 + MOD(e.employee_id, 60)) DAY
+        END AS start_date,
+
+    -- duration varies by leave type
+    CASE
+        WHEN lt.leave_type_name = 'Sick Leave'
+            THEN DATE_ADD(
+                CASE
+                    WHEN lt.leave_type_name = 'Sick Leave'
+                        THEN CURDATE() - INTERVAL MOD(e.employee_id, 7) DAY
+                    END,
+                INTERVAL (1 + FLOOR(RAND() * 5)) DAY
+                 )
+
+        WHEN lt.leave_type_name = 'Vacation'
+            THEN DATE_ADD(
+                CURDATE() + INTERVAL (10 + MOD(e.employee_id, 120)) DAY,
+                INTERVAL (5 + FLOOR(RAND() * 15)) DAY
+                 )
+
+        WHEN lt.leave_type_name IN ('Maternity', 'Paternity')
+            THEN DATE_ADD(
+                CURDATE() + INTERVAL (30 + MOD(e.employee_id, 200)) DAY,
+                INTERVAL (14 + FLOOR(RAND() * 120)) DAY
+                 )
+
+        ELSE
+            DATE_ADD(
+                    CURDATE() + INTERVAL (5 + MOD(e.employee_id, 60)) DAY,
+                    INTERVAL (1 + FLOOR(RAND() * 7)) DAY
+            )
+        END AS end_date,
+
+    -- skewed toward approval (real HR systems are not 1/3 each)
+    CASE
+        WHEN RAND() < 0.65 THEN 'APPROVED'
+        WHEN RAND() < 0.85 THEN 'PENDING'
+        ELSE 'REJECTED'
+        END AS request_status,
+
+    -- realistic reasons (often optional or short)
+    CASE
+        WHEN RAND() < 0.45 THEN NULL
+
+        WHEN lt.leave_type_name = 'Vacation' THEN
+            ELT(1 + FLOOR(RAND() * 5),
+                'Summer holiday',
+                'Family trip',
+                'Travel abroad',
+                'Rest and recovery',
+                'School holiday with children'
+            )
+
+        WHEN lt.leave_type_name = 'Sick Leave' THEN
+            ELT(1 + FLOOR(RAND() * 5),
+                'Flu symptoms',
+                'Fever and fatigue',
+                'Medical consultation',
+                'Short-term illness',
+                'Recovery period'
+            )
+
+        WHEN lt.leave_type_name = 'Study Leave' THEN
+            ELT(1 + FLOOR(RAND() * 4),
+                'Exam preparation',
+                'Course attendance',
+                'Certification study',
+                'Professional development'
+            )
+
+        ELSE
+            ELT(1 + FLOOR(RAND() * 4),
+                'Personal reasons',
+                'Family matters',
+                'Appointment',
+                'Private commitment'
+            )
+        END AS reason,
+
+    -- leave is usually requested before start date (except sick leave)
+    CASE
+        WHEN lt.leave_type_name = 'Sick Leave'
+            THEN NOW() - INTERVAL FLOOR(RAND() * 3) DAY
+
+        ELSE
+            NOW() - INTERVAL FLOOR(RAND() * 30) DAY
+        END AS requested_datetime
+
+FROM employee e
+         JOIN leave_type lt
+              ON lt.leave_type_id = 1 + MOD(e.employee_id, 8)
+
+-- not everyone files leave requests
+WHERE RAND() < 0.75;
 
 -- =========================================
--- LEAVE APPROVALS (~70)
+-- LEAVE APPROVALS (~realistic behavior)
 -- =========================================
-INSERT INTO leave_approval (leave_request_id,
-                            approver_employee_id,
-                            decision,
-                            leave_comment,
-                            decision_datetime)
-SELECT leave_request_id,
-       1 + MOD(leave_request_id + 7, @entities_to_generate),
-       ELT(1 + MOD(leave_request_id, 3), 'APPROVED', 'REJECTED', 'PENDING'),
-       'Reviewed',
-       NOW()
-FROM leave_request
-WHERE leave_request_id <= 70;
+INSERT INTO leave_approval (
+    leave_request_id,
+    approver_employee_id,
+    decision,
+    leave_comment,
+    decision_datetime
+)
+SELECT
+    lr.leave_request_id,
+
+    -- approver should not be the same employee
+    (
+        SELECT e.employee_id
+        FROM employee e
+        WHERE e.employee_id <> lr.employee_id
+        ORDER BY RAND()
+        LIMIT 1
+    ) AS approver_employee_id,
+
+    -- decision depends on request type + randomness
+    CASE
+        WHEN lr.request_status = 'REJECTED' THEN 'REJECTED'
+
+        WHEN lt.leave_type_name = 'Sick Leave'
+            THEN CASE
+                     WHEN RAND() < 0.90 THEN 'APPROVED'
+                     ELSE 'PENDING'
+            END
+
+        WHEN lt.leave_type_name = 'Vacation'
+            THEN CASE
+                     WHEN RAND() < 0.75 THEN 'APPROVED'
+                     WHEN RAND() < 0.15 THEN 'PENDING'
+                     ELSE 'REJECTED'
+            END
+
+        WHEN lt.leave_type_name IN ('Maternity', 'Paternity')
+            THEN 'APPROVED'
+
+        ELSE
+            CASE
+                WHEN RAND() < 0.65 THEN 'APPROVED'
+                WHEN RAND() < 0.20 THEN 'PENDING'
+                ELSE 'REJECTED'
+                END
+        END AS decision,
+
+    -- comments are often missing or very short in real systems
+    CASE
+        WHEN RAND() < 0.55 THEN NULL
+
+        WHEN lt.leave_type_name = 'Vacation' THEN
+            ELT(1 + FLOOR(RAND() * 5),
+                'Approved as per staffing availability',
+                'Leave granted',
+                'Coverage confirmed',
+                'No conflicts with schedule',
+                'Approved by department manager'
+            )
+
+        WHEN lt.leave_type_name = 'Sick Leave' THEN
+            ELT(1 + FLOOR(RAND() * 4),
+                'Medical leave approved',
+                'Standard sick leave policy applied',
+                'Approved without issue',
+                'HR noted medical absence'
+            )
+
+        WHEN lt.leave_type_name IN ('Maternity', 'Paternity') THEN
+            'Approved under statutory leave policy'
+
+        ELSE
+            ELT(1 + FLOOR(RAND() * 4),
+                'Reviewed and approved',
+                'No issues detected',
+                'Schedule permits absence',
+                'Approved pending coverage confirmation'
+            )
+        END AS leave_comment,
+
+    -- decision happens after request, pending stays NULL
+    CASE
+        WHEN lr.request_status = 'PENDING' THEN NULL
+        ELSE lr.requested_datetime + INTERVAL FLOOR(1 + RAND() * 72) HOUR
+        END AS decision_datetime
+
+FROM leave_request lr
+         JOIN leave_type lt
+              ON lt.leave_type_id = lr.leave_type_id
+
+WHERE lr.leave_request_id <= 70;
 
 -- =========================================
--- LEAVE LEDGER (100)
+-- AUDIT LOG (realistic activity simulation)
 -- =========================================
-INSERT INTO leave_ledger (employee_id, leave_type_id,
-                          change_amount_days,
-                          transaction_type,
-                          reference_entity_type,
-                          reference_entity_id,
-                          transaction_datetime)
-SELECT employee_id,
-       1 + MOD(employee_id, 8),
-       (1 + MOD(employee_id, 5)),
-       ELT(1 + MOD(employee_id, 2), 'ACCRUAL', 'USAGE'),
-       'LeaveRequest',
-       employee_id,
-       NOW() - INTERVAL MOD(employee_id, 30) DAY
-FROM employee;
+INSERT INTO audit_log (
+    entity_type,
+    entity_id,
+    action_type,
+    db_user,
+    action_datetime,
+    old_value_snapshot,
+    new_value_snapshot
+)
+SELECT
+    ELT(1 + MOD(employee_id, 5),
+        'Employee',
+        'Shift',
+        'LeaveRequest',
+        'ShiftSwap',
+        'EmployeeContract'
+    ) AS entity_type,
 
--- =========================================
--- AUDIT LOG (100)
--- =========================================
-INSERT INTO audit_log (entity_type, entity_id, action_type,
-                       db_user,
-                       action_datetime,
-                       old_value_snapshot,
-                       new_value_snapshot)
-SELECT 'Employee',
-       employee_id,
-       ELT(1 + MOD(employee_id, 3), 'CREATE', 'UPDATE', 'DELETE'),
-       USER(),
-       NOW(),
-       '{}',
-       '{}'
-FROM employee;
+    employee_id AS entity_id,
+
+    -- realistic distribution: UPDATE dominates
+    CASE
+        WHEN RAND() < 0.10 THEN 'CREATE'
+        WHEN RAND() < 0.80 THEN 'UPDATE'
+        ELSE 'DELETE'
+        END AS action_type,
+
+    -- real systems have multiple actors
+    ELT(1 + FLOOR(RAND() * 5),
+        'system',
+        'hr_admin',
+        'shift_manager',
+        'department_head',
+        'scheduler_service'
+    ) AS db_user,
+
+    -- spread actions over time (not all NOW())
+    NOW() - INTERVAL FLOOR(RAND() * 30) DAY
+        - INTERVAL FLOOR(RAND() * 24) HOUR AS action_datetime,
+
+    -- realistic partial snapshots (not empty placeholders)
+    CASE
+        WHEN RAND() < 0.4 THEN NULL
+        ELSE JSON_OBJECT(
+                'status', ELT(1 + FLOOR(RAND() * 3), 'ACTIVE', 'INACTIVE', 'PENDING'),
+                'updated_field', ELT(1 + FLOOR(RAND() * 4), 'email', 'status', 'department', 'contract'),
+                'previous_value', ELT(1 + FLOOR(RAND() * 3), 'old', 'previous', 'null')
+             )
+        END AS old_value_snapshot,
+
+    CASE
+        WHEN RAND() < 0.3 THEN NULL
+        ELSE JSON_OBJECT(
+                'status', ELT(1 + FLOOR(RAND() * 3), 'ACTIVE', 'INACTIVE', 'PENDING'),
+                'updated_field', ELT(1 + FLOOR(RAND() * 4), 'email', 'status', 'department', 'contract'),
+                'new_value', ELT(1 + FLOOR(RAND() * 3), 'updated', 'changed', 'new')
+             )
+        END AS new_value_snapshot
+
+FROM employee
+
+-- not every employee generates audit logs
+WHERE RAND() < 0.9;
 COMMIT;
