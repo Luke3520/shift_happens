@@ -1,6 +1,7 @@
 -- Create all tables for shift-happens
-CREATE DATABASE IF NOT EXISTS shift_happens;
+CREATE DATABASE IF NOT EXISTS shift_happens CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE shift_happens;
+SET NAMES utf8mb4;
 CREATE TABLE department
 (
     department_id   INT AUTO_INCREMENT PRIMARY KEY,
