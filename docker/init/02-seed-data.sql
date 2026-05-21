@@ -2,20 +2,6 @@ USE shift_happens;
 SET NAMES utf8mb4;
 SET @entities_to_generate = 100;
 START TRANSACTION;
--- =========================================
--- NUMBER GENERATOR (1 → 100)
--- =========================================
-WITH RECURSIVE seq AS (SELECT 1 AS n
-                       UNION ALL
-                       SELECT n + 1
-                       FROM seq
-                       WHERE n < @entities_to_generate)
-SELECT n
-INTO @dummy
-FROM seq
-LIMIT 1;
-
-
 -- Realistiske afdelingsnavne
 INSERT INTO department (department_name, is_active)
 VALUES ('Akutmodtagelse', 1),
@@ -710,6 +696,21 @@ FROM leave_request lr
               ON lt.leave_type_id = lr.leave_type_id
 
 WHERE lr.leave_request_id <= 70;
+
+INSERT INTO leave_ledger (employee_id, leave_type_id,
+                          change_amount_days,
+                          transaction_type,
+                          reference_entity_type,
+                          reference_entity_id,
+                          transaction_datetime)
+SELECT employee_id,
+       1 + MOD(employee_id, 8),
+       (1 + MOD(employee_id, 5)),
+       ELT(1 + MOD(employee_id, 2), 'ACCRUAL', 'USAGE'),
+       'LeaveRequest',
+       employee_id,
+       NOW() - INTERVAL MOD(employee_id, 30) DAY
+FROM employee;
 
 -- =========================================
 -- AUDIT LOG (realistic activity simulation)
