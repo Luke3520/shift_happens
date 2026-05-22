@@ -2,6 +2,9 @@ package dk.ek.shift_happens.employee.neo4j;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -17,8 +20,16 @@ public class EmployeeNeo4jController {
     private final EmployeeNeo4jService employeeNeo4jService;
 
     @GetMapping
-    public List<EmployeeNodeDto> getAll() {
-        return employeeNeo4jService.findAll().stream().map(EmployeeNodeDto::from).toList();
+    public Page<EmployeeNodeDto> getAll(
+            @RequestParam(required = false) String employmentStatus,
+            @RequestParam(required = false) Integer primaryWorkLocationId,
+            @RequestParam(required = false) String userRole,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String firstName,
+            @RequestParam(required = false) String lastName,
+            @ParameterObject Pageable pageable) {
+        return employeeNeo4jService.findAll(employmentStatus, primaryWorkLocationId, userRole, email, firstName, lastName, pageable)
+                .map(EmployeeNodeDto::from);
     }
 
     @GetMapping("/{id}")

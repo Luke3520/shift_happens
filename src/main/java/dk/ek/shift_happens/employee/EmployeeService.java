@@ -1,6 +1,9 @@
 package dk.ek.shift_happens.employee;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +29,10 @@ public class EmployeeService {
 
     public List<Employee> findAll() {
         return this.employeeRepository.findAll();
+    }
+
+    public Page<Employee> findAll(Specification<Employee> spec, Pageable pageable) {
+        return this.employeeRepository.findAll(spec, pageable);
     }
 
     public Optional<Employee> findById(Integer id) {
