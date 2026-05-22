@@ -99,7 +99,6 @@ export default function ShiftAssignmentFormPage() {
   useEffect(() => {
     if (isNew || numericId === null) return;
     let cancelled = false;
-    setLoading(true);
     getShiftAssignment(numericId)
       .then((a) => {
         if (cancelled) return;
