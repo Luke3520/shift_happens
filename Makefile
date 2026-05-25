@@ -46,6 +46,41 @@ db-shell:
 	docker exec -it shift-happens-db mysql -u root -p$(MYSQL_ROOT_PASSWORD) $(MYSQL_DATABASE)
 
 # ──────────────────────────────────────────────────────────────
+# Testing  (isolated, throwaway Docker DBs — never touches dev data)
+# ──────────────────────────────────────────────────────────────
+
+# Run the test stack under its own compose project so it stays isolated from dev.
+TEST_COMPOSE = docker compose -p shift-happens-test -f docker-compose.test.yml
+
+# Connection settings that point the test run at the test stack's ports.
+# These override the dev values exported from .env, just for ./mvnw test.
+TEST_ENV = \
+	DB_URL="jdbc:mysql://127.0.0.1:3308/$(MYSQL_DATABASE)?serverTimezone=UTC" \
+	DB_USERNAME=root \
+	DB_PASSWORD="$(MYSQL_ROOT_PASSWORD)" \
+	MONGO_URI="mongodb://127.0.0.1:27018/$(MYSQL_DATABASE)" \
+	NEO4J_URI="bolt://127.0.0.1:7688" \
+	NEO4J_USERNAME="$(NEO4J_USERNAME)" \
+	NEO4J_PASSWORD="$(NEO4J_PASSWORD)" \
+	JWT_SECRET="$(JWT_SECRET)" \
+	PASSWORD_PEPPER="$(PASSWORD_PEPPER)"
+
+## Start the throwaway test databases (MySQL/Mongo/Neo4j) on test ports
+test-up:
+	$(TEST_COMPOSE) up -d --wait
+
+## Stop the test databases and wipe their data
+test-down:
+	$(TEST_COMPOSE) down -v
+
+## Spin up test DBs, run the full test suite against them, then tear them down
+test:
+	@set -e; \
+	trap '$(TEST_COMPOSE) down -v' EXIT; \
+	$(TEST_COMPOSE) up -d --wait; \
+	$(TEST_ENV) ./mvnw test
+
+# ──────────────────────────────────────────────────────────────
 # Load Dumps  (restore committed seed data into live containers)
 # ──────────────────────────────────────────────────────────────
 

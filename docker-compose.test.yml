@@ -1,0 +1,49 @@
+# Throwaway test stack — isolated databases for `make test`.
+# No app, no named volumes (data lives in the container layer and is wiped on
+# `down`), and ports are offset from dev so this runs alongside docker-compose.yml.
+# Always invoke via the Makefile, which runs it under its own compose project
+# name (-p shift-happens-test) to keep containers/networks separate from dev.
+services:
+  db:
+    image: mysql:8.0
+    container_name: shift-happens-test-db
+    command: --event-scheduler=ON --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      APP_DB_USER: ${APP_DB_USER}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+    ports:
+      - "3308:3306"
+    volumes:
+      - ./docker/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysql", "-uroot", "-p${MYSQL_ROOT_PASSWORD}", "-e", "SELECT 1 FROM ${MYSQL_DATABASE}.employee LIMIT 1;"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mongodb:
+    image: mongo:7
+    container_name: shift-happens-test-mongo
+    ports:
+      - "27018:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  neo4j:
+    image: neo4j:5
+    container_name: shift-happens-test-neo4j
+    ports:
+      - "7475:7474"
+      - "7688:7687"
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD}
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "${NEO4J_PASSWORD}", "RETURN 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 20

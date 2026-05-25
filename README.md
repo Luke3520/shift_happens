@@ -89,6 +89,9 @@ If you have `make` installed, these wrap the docker/maven commands above:
 | `make down` | `docker compose down` |
 | `make clean` | `docker compose down -v` |
 | `make db-shell` | Open MySQL CLI inside the container |
+| `make test` | Spin up isolated test DBs, run `./mvnw test`, then tear them down |
+| `make test-up` | Start the throwaway test DBs only (ports 3308 / 27018 / 7688) |
+| `make test-down` | Stop the test DBs and wipe their data |
 
 ---
 
