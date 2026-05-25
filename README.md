@@ -4,6 +4,139 @@ A shift scheduling and leave management system built as a database course projec
 
 ---
 
+## Final Project Artifacts Guide
+
+This repository contains the final project artifacts in the following locations.
+
+### Public code repository
+
+The complete source code is in this public GitHub repository:
+
+```text
+https://github.com/Luke3520/shift_happens
+```
+
+### Relational database artifacts - MySQL
+
+The relational database scripts are located in:
+
+```text
+docker/init/
+src/main/resources/db/mysql/
+```
+
+Important files:
+
+| Artifact | Location |
+|----------|----------|
+| Database creation, tables, keys, indexes, constraints, and referential integrity | `docker/init/01-schema.sql` and `src/main/resources/db/mysql/schema.sql` |
+| Test data | `docker/init/02-seed-data.sql` and `src/main/resources/db/mysql/seed.sql` |
+| Stored procedures/functions | `docker/init/08-routines.sql` and `src/main/resources/db/mysql/migrations/v4_stored_functions.sql` |
+| Triggers | `docker/init/05-triggers.sql` and `src/main/resources/db/mysql/migrations/v3_leave_approval_trigger.sql`, `v4_triggers.sql`, `v5_auditlog_triggers.sql` |
+| Views | `docker/init/07-views.sql` and `src/main/resources/db/mysql/views.sql` |
+| Events | `docker/init/06-events.sql` |
+| Users and privileges | `docker/init/09-create-app-user.sh`, `docker/init/09-seed-test-logins.sql`, and `src/main/resources/db/mysql/migrations/v6_users_privileges.sql` |
+
+The Docker setup imports the scripts in `docker/init/` automatically when the MySQL container is created.
+
+### CRUD application source code
+
+The CRUD application source code is located in:
+
+```text
+src/main/java/dk/ek/shift_happens/
+frontend/
+```
+
+Backend controllers, services, repositories, entities, DTOs, security, and database integrations are in `src/main/java/dk/ek/shift_happens/`. The React frontend is in `frontend/`.
+
+### Migration application source code
+
+The migration source code is located in:
+
+```text
+src/main/java/dk/ek/shift_happens/migration/
+```
+
+The migration can be triggered after startup with:
+
+```bash
+curl -X POST http://localhost:8080/migrate
+```
+
+### MongoDB artifacts
+
+MongoDB artifacts are located in:
+
+```text
+src/main/resources/db/mongodb/
+```
+
+Important files:
+
+| Artifact | Location |
+|----------|----------|
+| Document database dump | `src/main/resources/db/mongodb/dump/` |
+| Script for loading test data/dump | `src/main/resources/db/mongodb/load.sh` |
+| JSON schemas | `src/main/resources/db/mongodb/schemas/` |
+| MongoDB CRUD source code | `src/main/java/dk/ek/shift_happens/**/mongo/` |
+
+To load the committed MongoDB dump into the running Docker container:
+
+```bash
+bash src/main/resources/db/mongodb/load.sh
+```
+
+### Neo4j artifacts
+
+Neo4j artifacts are located in:
+
+```text
+src/main/resources/db/neo4j/
+src/main/resources/neo4_graf/
+```
+
+Important files:
+
+| Artifact | Location |
+|----------|----------|
+| Graph database dump | `src/main/resources/db/neo4j/neo4j.dump` |
+| Script for loading test data/dump | `src/main/resources/db/neo4j/load.sh` |
+| Schema and indexes | `src/main/resources/neo4_graf/neo4j-schema.cypher` and `src/main/resources/neo4_graf/neo4j-indexes.cypher` |
+| Neo4j CRUD source code | `src/main/java/dk/ek/shift_happens/**/neo4j/` |
+
+To load the committed Neo4j dump into the running Docker setup:
+
+```bash
+bash src/main/resources/db/neo4j/load.sh
+```
+
+### Installation in a test environment
+
+The project is designed to run with Docker Compose. Use this procedure for a full test environment:
+
+```bash
+git clone https://github.com/Luke3520/shift_happens.git
+cd shift_happens
+cp .env.example .env
+docker compose up app
+```
+
+This starts MySQL, MongoDB, Neo4j, and the Spring Boot application. MySQL is initialized automatically from `docker/init/`. After the application is running, populate MongoDB and Neo4j through the migration endpoint:
+
+```bash
+curl -X POST http://localhost:8080/migrate
+```
+
+If you want to import the committed MongoDB and Neo4j dumps instead of running the migration, use:
+
+```bash
+bash src/main/resources/db/mongodb/load.sh
+bash src/main/resources/db/neo4j/load.sh
+```
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
