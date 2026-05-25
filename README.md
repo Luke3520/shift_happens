@@ -36,6 +36,8 @@ Important files:
 | Views | `docker/init/07-views.sql` and `src/main/resources/db/mysql/views.sql` |
 | Events | `docker/init/06-events.sql` |
 | Users and privileges | `docker/init/09-create-app-user.sh`, `docker/init/09-seed-test-logins.sql`, and `src/main/resources/db/mysql/migrations/v6_users_privileges.sql` |
+| Committed database dump | `src/main/resources/db/mysql/mysql.sql` |
+| Script for loading dump | `src/main/resources/db/mysql/load.sh` |
 
 The Docker setup imports the scripts in `docker/init/` automatically when the MySQL container is created.
 
@@ -113,7 +115,7 @@ bash src/main/resources/db/neo4j/load.sh
 
 ### Installation in a test environment
 
-The project is designed to run with Docker Compose. Use this procedure for a full test environment:
+The project is designed to run with Docker Compose. **Only Docker is required** — no Java, Maven, or database clients needed.
 
 ```bash
 git clone https://github.com/Luke3520/shift_happens.git
@@ -122,15 +124,18 @@ cp .env.example .env
 docker compose up app
 ```
 
-This starts MySQL, MongoDB, Neo4j, and the Spring Boot application. MySQL is initialized automatically from `docker/init/`. After the application is running, populate MongoDB and Neo4j through the migration endpoint:
+This starts MySQL, MongoDB, Neo4j, and the Spring Boot application. MySQL is initialized automatically from `docker/init/`. The API is available at **http://localhost:8080** once startup completes.
 
+**Populate MongoDB and Neo4j** — choose one option:
+
+Option A — run the migration (reads from MySQL and writes to both):
 ```bash
 curl -X POST http://localhost:8080/migrate
 ```
 
-If you want to import the committed MongoDB and Neo4j dumps instead of running the migration, use:
-
+Option B — load the committed dump files directly:
 ```bash
+bash src/main/resources/db/mysql/load.sh
 bash src/main/resources/db/mongodb/load.sh
 bash src/main/resources/db/neo4j/load.sh
 ```
@@ -199,13 +204,20 @@ docker compose up app
 
 ### 4. Populate MongoDB and Neo4j
 
-After the app is running, trigger the one-time migration from MySQL:
+MySQL is seeded automatically. MongoDB and Neo4j need a one-time population — choose one option:
 
+**Option A — migration** (reads from MySQL, writes to MongoDB + Neo4j):
 ```bash
 curl -X POST http://localhost:8080/migrate
 ```
 
-This reads all MySQL data and writes it into MongoDB and Neo4j. You only need to run this once (or after a `docker compose down -v` reset).
+**Option B — load committed dumps** (faster, skips migration):
+```bash
+bash src/main/resources/db/mongodb/load.sh
+bash src/main/resources/db/neo4j/load.sh
+```
+
+You only need to do this once (or again after a `docker compose down -v` reset).
 
 ---
 
@@ -222,6 +234,13 @@ If you have `make` installed, these wrap the docker/maven commands above:
 | `make down` | `docker compose down` |
 | `make clean` | `docker compose down -v` |
 | `make db-shell` | Open MySQL CLI inside the container |
+| `make load-dbs` | Restore all 3 committed dumps into running containers |
+| `make load-mysql` | Restore committed MySQL dump only |
+| `make load-mongo` | Restore committed MongoDB dump only |
+| `make load-neo4j` | Restore committed Neo4j dump only |
+| `make backup` | Dump all 3 DBs → `backups/<timestamp>/` |
+| `make restore BACKUP=backups/<ts>` | Restore all 3 DBs from a timestamped backup |
+| `make verify` | Print record counts for all 3 databases |
 | `make test` | Spin up isolated test DBs, run `./mvnw test`, then tear them down |
 | `make test-up` | Start the throwaway test DBs only (ports 3308 / 27018 / 7688) |
 | `make test-down` | Stop the test DBs and wipe their data |
@@ -394,12 +413,13 @@ To **update the committed dump files** after a backup (e.g. after seeding new da
 make backup
 
 # Copy the fresh dumps over the committed ones
-cp -r backups/<timestamp>/mongodb/. src/main/resources/db/mongodb/dump/
-cp    backups/<timestamp>/neo4j.dump src/main/resources/db/neo4j/neo4j.dump
+cp    backups/<timestamp>/mysql.sql   src/main/resources/db/mysql/mysql.sql
+cp -r backups/<timestamp>/mongodb/.   src/main/resources/db/mongodb/dump/
+cp    backups/<timestamp>/neo4j.dump  src/main/resources/db/neo4j/neo4j.dump
 
 # Verify then commit
 make verify
-git add src/main/resources/db/mongodb/dump/ src/main/resources/db/neo4j/neo4j.dump
+git add src/main/resources/db/mysql/mysql.sql src/main/resources/db/mongodb/dump/ src/main/resources/db/neo4j/neo4j.dump
 git commit -m "chore: update committed db dump artifacts"
 ```
 
@@ -432,7 +452,8 @@ The restore script validates all three files exist before touching anything, the
 |---|---|
 | `make backup` | Dump all 3 DBs → `backups/<timestamp>/` |
 | `make restore BACKUP=backups/<ts>` | Restore all 3 DBs from a backup |
-| `make load-dbs` | Load committed dump files into running containers |
+| `make load-dbs` | Load committed dump files into running containers (all 3) |
+| `make load-mysql` | Load committed MySQL dump only |
 | `make load-mongo` | Load committed MongoDB dump only |
 | `make load-neo4j` | Load committed Neo4j dump only |
 | `make verify` | Print record counts for all 3 databases |
