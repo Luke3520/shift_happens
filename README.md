@@ -104,7 +104,7 @@ The application connects as `app_user`, a least-privilege account defined in [`s
 - **Full CRUD** on all other operational tables
 - No `DROP`, `ALTER`, `CREATE`, or `GRANT` permissions
 
-In Docker, the user is created at startup by [`docker/init/09-create-app-user.sh`](docker/init/09-create-app-user.sh) using credentials from `.env`.
+In Docker (and when loading an external DB via `make load-railway`), all four database users — `app_user`, `sh_admin`, `sh_readonly`, `sh_restricted` — are created at startup by [`docker/init/10-db-users.sql`](docker/init/10-db-users.sql).
 
 ### Database Backups
 See the [Database Operations](#database-operations) section below for the full backup, restore, and verification guide.

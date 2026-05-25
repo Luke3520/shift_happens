@@ -62,6 +62,10 @@ load-mongo:
 load-neo4j:
 	@bash src/main/resources/db/neo4j/load.sh
 
+## Load the full MySQL schema + seed data into the external DB in .env (e.g. Railway)
+load-railway:
+	@bash scripts/load-railway.sh
+
 # ──────────────────────────────────────────────────────────────
 # Backups
 # ──────────────────────────────────────────────────────────────
