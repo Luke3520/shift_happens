@@ -84,10 +84,15 @@ test:
 # Load Dumps  (restore committed seed data into live containers)
 # ──────────────────────────────────────────────────────────────
 
-## Load both committed dumps — run after: make reset && make run-dbs
+## Load all 3 committed dumps — run after: make reset && make run-dbs
 load-dbs:
+	@bash src/main/resources/db/mysql/load.sh
 	@bash src/main/resources/db/mongodb/load.sh
 	@bash src/main/resources/db/neo4j/load.sh
+
+## Load the committed MySQL dump only
+load-mysql:
+	@bash src/main/resources/db/mysql/load.sh
 
 ## Load the committed MongoDB dump only
 load-mongo:
