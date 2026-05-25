@@ -35,6 +35,10 @@ public class EmployeeService {
         return this.employeeRepository.findAll(spec, pageable);
     }
 
+    public List<Employee> findAll(Specification<Employee> spec) {
+        return this.employeeRepository.findAll(spec);
+    }
+
     public Optional<Employee> findById(Integer id) {
         return this.employeeRepository.findById(id);
     }

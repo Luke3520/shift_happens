@@ -4,9 +4,6 @@ import dk.ek.shift_happens.auth.AuthHelper;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,20 +23,18 @@ public class EmployeeController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Page<EmployeeDto>> getEmployees(
+    public List<EmployeeDto> getEmployees(
             @RequestParam(required = false) String employmentStatus,
             @RequestParam(required = false) Integer primaryWorkLocationId,
             @RequestParam(required = false) UserRole userRole,
             @RequestParam(required = false) String email,
             @RequestParam(required = false) String firstName,
             @RequestParam(required = false) String lastName,
-            @ParameterObject Pageable pageable,
             Authentication auth) {
         if (authHelper.isEmployee(auth)) {
             Integer selfId = authHelper.currentEmployeeId(auth);
             Specification<Employee> spec = (root, query, cb) -> cb.equal(root.get("employeeId"), selfId);
-            Page<EmployeeDto> page = this.employeeService.findAll(spec, pageable).map(EmployeeDto::from);
-            return ResponseEntity.ok(page);
+            return this.employeeService.findAll(spec).stream().map(EmployeeDto::from).toList();
         } else {
             Specification<Employee> spec = (root, query, cb) -> cb.conjunction();
             if (employmentStatus != null) {
@@ -61,8 +56,7 @@ public class EmployeeController {
                 spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("lastName")), "%" + lastName.toLowerCase() + "%"));
             }
 
-            Page<EmployeeDto> page = this.employeeService.findAll(spec, pageable).map(EmployeeDto::from);
-            return ResponseEntity.ok(page);
+            return this.employeeService.findAll(spec).stream().map(EmployeeDto::from).toList();
         }
     }
 
