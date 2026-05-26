@@ -126,39 +126,33 @@ test-env-logs:
 # Playwright auto-starts the frontend dev server (port 5173).
 # ──────────────────────────────────────────────────────────────
 
-API_URL ?= http://localhost:8080
-BASE_URL ?= http://localhost:5173
-# PWARGS: extra Playwright flags passed to the run targets below.
-# Watch the browser with: make fe-test-e2e PWARGS=--headed   (or use `make fe-test-ui`)
-PWARGS ?=
-
 ## Install the Playwright browser (Chromium) — run once
 fe-test-install:
 	cd frontend && npx playwright install chromium
 
 ## Run all frontend tests (API + E2E)
 fe-test:
-	cd frontend && API_URL=$(API_URL) BASE_URL=$(BASE_URL) npx playwright test $(PWARGS)
+	cd frontend && npx playwright test
 
 ## Run only the API specs (*.api.spec.ts)
 fe-test-api:
-	cd frontend && API_URL=$(API_URL) BASE_URL=$(BASE_URL) npx playwright test $(PWARGS) api.spec
+	cd frontend && npx playwright test api.spec
 
 ## Run only the end-to-end specs (*.e2e.spec.ts)
 fe-test-e2e:
-	cd frontend && API_URL=$(API_URL) BASE_URL=$(BASE_URL) npx playwright test $(PWARGS) e2e.spec
+	cd frontend && npx playwright test e2e.spec
 
 ## Run a single spec or filter by path/title. Usage: make fe-test-one SPEC=shiftapproval
 fe-test-one:
-	cd frontend && API_URL=$(API_URL) BASE_URL=$(BASE_URL) npx playwright test $(PWARGS) $(SPEC)
+	cd frontend && npx playwright test $(SPEC)
 
 ## Watch the E2E tests run in a visible browser (headed)
 fe-test-headed:
-	cd frontend && API_URL=$(API_URL) BASE_URL=$(BASE_URL) npx playwright test e2e.spec --headed $(PWARGS)
+	cd frontend && npx playwright test e2e.spec --headed
 
 ## Open Playwright's interactive UI — watch/replay tests in the browser, re-run on save
 fe-test-ui:
-	cd frontend && API_URL=$(API_URL) BASE_URL=$(BASE_URL) npx playwright test --ui
+	cd frontend && npx playwright test --ui
 
 ## Open the last Playwright HTML report
 fe-test-report:
