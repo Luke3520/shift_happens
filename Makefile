@@ -116,6 +116,41 @@ test-env-logs:
 	docker compose -f docker-compose.test.yml --env-file .env.test logs
 
 # ──────────────────────────────────────────────────────────────
+# Frontend tests (Playwright) — needs a running backend.
+# Defaults to the test backend on :8081 (start it with `make test-env-up`).
+# Vite proxies /api -> $(API_URL), and the specs read API_URL, so one var
+# points both the app and the tests at the same backend. Override with e.g.
+#   make fe-test API_URL=http://localhost:8080
+# Playwright auto-starts the frontend dev server (port 5173).
+# ──────────────────────────────────────────────────────────────
+
+API_URL ?= http://localhost:8081
+
+## Install the Playwright browser (Chromium) — run once
+fe-test-install:
+	cd frontend && npx playwright install chromium
+
+## Run all frontend tests (API + E2E)
+fe-test:
+	cd frontend && API_URL=$(API_URL) npx playwright test
+
+## Run only the API specs (*.api.spec.ts)
+fe-test-api:
+	cd frontend && API_URL=$(API_URL) npx playwright test api.spec
+
+## Run only the end-to-end specs (*.e2e.spec.ts)
+fe-test-e2e:
+	cd frontend && API_URL=$(API_URL) npx playwright test e2e.spec
+
+## Run a single spec or filter by path/title. Usage: make fe-test-one SPEC=shiftapproval
+fe-test-one:
+	cd frontend && API_URL=$(API_URL) npx playwright test $(SPEC)
+
+## Open the last Playwright HTML report
+fe-test-report:
+	cd frontend && npx playwright show-report
+
+# ──────────────────────────────────────────────────────────────
 # Performance (run against test env — start with make test-env-up first)
 # ──────────────────────────────────────────────────────────────
 
