@@ -109,8 +109,8 @@ test.describe.serial('Job Role API', () => {
       await deleteIfExists(`${API_URL}/shiftrequiredjobroles/${linkId}`);
     }
     for (const linkId of Array.from(employeeJobRolesToCleanup).reverse()) {
-      const res = await request.delete(`${API_URL}/employeejobroles/${linkId}`, { headers: authHeaders(adminToken) });
-      // We don't expect(200) here because it might have been deleted already by the test
+      await request.delete(`${API_URL}/employeejobroles/${linkId}`, { headers: authHeaders(adminToken) });
+// We don't expect(200) here because it might have been deleted already by the test
     }
     for (const shiftId of Array.from(shiftsToCleanup).reverse()) {
       await deleteIfExists(`${API_URL}/shifts/${shiftId}`);
@@ -561,6 +561,100 @@ test.describe.serial('Job Role API', () => {
       headers: authHeaders(adminToken),
     });
     // In this project, service.getById(id) likely throws an exception that maps to 404 if not found.
+    expect(verifyDelete.status()).toBe(404);
+  });
+
+  // ── BR-API-SRJR-01 — shift required job role CRUD ───────────────────────
+
+  test('BR-API-SRJR-01 — should perform full lifecycle for ShiftRequiredJobRole', async ({ request }) => {
+    // 1. Setup: Create a JobRole and a Shift
+    const createRole = await request.post(`${API_URL}/jobroles`, {
+      headers: authHeaders(adminToken),
+      data: {
+        roleName: `SRJR-Role-${randomLetters(8)}`,
+        jobRoleDescription: 'Temp role for SRJR test',
+        isCertificationRequired: false,
+      },
+    });
+    expect(createRole.status()).toBe(201);
+    const jobRoleId = (await createRole.json()).jobRoleId as number;
+    jobRolesToCleanup.add(jobRoleId);
+
+    const start = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
+    const end = new Date(start.getTime() + 8 * 60 * 60 * 1000);
+    const fmt = (d: Date) => d.toISOString().slice(0, 19);
+    const createShift = await request.post(`${API_URL}/shifts`, {
+      headers: authHeaders(adminToken),
+      data: {
+        departmentId: 1,
+        workLocationId: 1,
+        shiftName: `SRJR-Shift-${randomLetters(8)}`,
+        startDatetime: fmt(start),
+        endDatetime: fmt(end),
+        shiftStatus: 'Open',
+      },
+    });
+    expect(createShift.status()).toBe(201);
+    const shiftId = (await createShift.json()).shiftId as number;
+    shiftsToCleanup.add(shiftId);
+
+    // 2. Create the link (POST /shiftrequiredjobroles)
+    const createSRJR = await request.post(`${API_URL}/shiftrequiredjobroles`, {
+      headers: authHeaders(adminToken),
+      data: {
+        shiftId,
+        jobRoleId,
+        requiredEmployeeCount: 1,
+      },
+    });
+    expect(createSRJR.status()).toBe(201);
+    const srjr = await createSRJR.json();
+    const srjrId = srjr.shiftRequiredJobRoleId;
+    expect(srjrId).toBeDefined();
+    shiftRequiredJobRolesToCleanup.add(srjrId);
+
+    // 3. Get all links (GET /shiftrequiredjobroles)
+    const getAllResponse = await request.get(`${API_URL}/shiftrequiredjobroles`, {
+      headers: authHeaders(adminToken),
+    });
+    expect(getAllResponse.status()).toBe(200);
+    const allLinks = await getAllResponse.json();
+    expect(Array.isArray(allLinks)).toBe(true);
+    expect(allLinks.some((l: any) => l.shiftRequiredJobRoleId === srjrId)).toBe(true);
+
+    // 4. Get the link by ID (GET /shiftrequiredjobroles/{id})
+    const getResponse = await request.get(`${API_URL}/shiftrequiredjobroles/${srjrId}`, {
+      headers: authHeaders(adminToken),
+    });
+    expect(getResponse.status()).toBe(200);
+    const fetchedSRJR = await getResponse.json();
+    expect(fetchedSRJR.shiftRequiredJobRoleId).toBe(srjrId);
+    expect(fetchedSRJR.requiredEmployeeCount).toBe(1);
+
+    // 5. Update the link (PUT /shiftrequiredjobroles/{id})
+    const updateResponse = await request.put(`${API_URL}/shiftrequiredjobroles/${srjrId}`, {
+      headers: authHeaders(adminToken),
+      data: {
+        shiftId,
+        jobRoleId,
+        requiredEmployeeCount: 2,
+      },
+    });
+    expect(updateResponse.status()).toBe(200);
+    const updatedSRJR = await updateResponse.json();
+    expect(updatedSRJR.requiredEmployeeCount).toBe(2);
+
+    // 6. Delete the link (DELETE /shiftrequiredjobroles/{id})
+    const deleteResponse = await request.delete(`${API_URL}/shiftrequiredjobroles/${srjrId}`, {
+      headers: authHeaders(adminToken),
+    });
+    expect(deleteResponse.status()).toBe(204);
+    shiftRequiredJobRolesToCleanup.delete(srjrId);
+
+    // 7. Verify deletion (GET /shiftrequiredjobroles/{id} should return 404)
+    const verifyDelete = await request.get(`${API_URL}/shiftrequiredjobroles/${srjrId}`, {
+      headers: authHeaders(adminToken),
+    });
     expect(verifyDelete.status()).toBe(404);
   });
 });
