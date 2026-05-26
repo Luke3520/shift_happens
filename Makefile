@@ -116,6 +116,55 @@ test-env-logs:
 	docker compose -f docker-compose.test.yml --env-file .env.test logs
 
 # ──────────────────────────────────────────────────────────────
+# Frontend tests (Playwright) — needs a running backend.
+# Defaults to the dev backend on :8080 (start it with `make dev`). For the
+# isolated test stack: `make test-env-up`, then API_URL=http://localhost:8081.
+# Vite proxies /api -> $(API_URL) and the specs read API_URL, so one var points
+# both the app and the tests at the same backend.
+# BASE_URL uses localhost (not 127.0.0.1) so Playwright's dev-server readiness
+# check matches Vite's host on macOS/IPv6 — otherwise the run hangs at startup.
+# Playwright auto-starts the frontend dev server (port 5173).
+# ──────────────────────────────────────────────────────────────
+
+API_URL ?= http://localhost:8080
+BASE_URL ?= http://localhost:5173
+# PWARGS: extra Playwright flags passed to the run targets below.
+# Watch the browser with: make fe-test-e2e PWARGS=--headed   (or use `make fe-test-ui`)
+PWARGS ?=
+
+## Install the Playwright browser (Chromium) — run once
+fe-test-install:
+	cd frontend && npx playwright install chromium
+
+## Run all frontend tests (API + E2E)
+fe-test:
+	cd frontend && API_URL=$(API_URL) BASE_URL=$(BASE_URL) npx playwright test $(PWARGS)
+
+## Run only the API specs (*.api.spec.ts)
+fe-test-api:
+	cd frontend && API_URL=$(API_URL) BASE_URL=$(BASE_URL) npx playwright test $(PWARGS) api.spec
+
+## Run only the end-to-end specs (*.e2e.spec.ts)
+fe-test-e2e:
+	cd frontend && API_URL=$(API_URL) BASE_URL=$(BASE_URL) npx playwright test $(PWARGS) e2e.spec
+
+## Run a single spec or filter by path/title. Usage: make fe-test-one SPEC=shiftapproval
+fe-test-one:
+	cd frontend && API_URL=$(API_URL) BASE_URL=$(BASE_URL) npx playwright test $(PWARGS) $(SPEC)
+
+## Watch the E2E tests run in a visible browser (headed)
+fe-test-headed:
+	cd frontend && API_URL=$(API_URL) BASE_URL=$(BASE_URL) npx playwright test e2e.spec --headed $(PWARGS)
+
+## Open Playwright's interactive UI — watch/replay tests in the browser, re-run on save
+fe-test-ui:
+	cd frontend && API_URL=$(API_URL) BASE_URL=$(BASE_URL) npx playwright test --ui
+
+## Open the last Playwright HTML report
+fe-test-report:
+	cd frontend && npx playwright show-report
+
+# ──────────────────────────────────────────────────────────────
 # Performance (run against test env — start with make test-env-up first)
 # ──────────────────────────────────────────────────────────────
 
