@@ -109,7 +109,8 @@ test.describe.serial('Job Role API', () => {
       await deleteIfExists(`${API_URL}/shiftrequiredjobroles/${linkId}`);
     }
     for (const linkId of Array.from(employeeJobRolesToCleanup).reverse()) {
-      await deleteIfExists(`${API_URL}/employeejobroles/${linkId}`, 200);
+      const res = await request.delete(`${API_URL}/employeejobroles/${linkId}`, { headers: authHeaders(adminToken) });
+      // We don't expect(200) here because it might have been deleted already by the test
     }
     for (const shiftId of Array.from(shiftsToCleanup).reverse()) {
       await deleteIfExists(`${API_URL}/shifts/${shiftId}`);
@@ -484,5 +485,82 @@ test.describe.serial('Job Role API', () => {
     expect(deleteResponse.status()).toBe(400);
     const msg = await deleteResponse.text();
     expect(msg.toLowerCase()).toContain('shift');
+  });
+
+  // ── BR-API-EJR-01 — employee job role CRUD ──────────────────────────────
+
+  test('BR-API-EJR-01 — should perform full lifecycle for EmployeeJobRole', async ({ request }) => {
+    // 1. Create a temporary JobRole to link
+    const createRole = await request.post(`${API_URL}/jobroles`, {
+      headers: authHeaders(adminToken),
+      data: {
+        roleName: `EJR-Test-${randomLetters(8)}`,
+        jobRoleDescription: 'Temporary role for EJR CRUD test',
+        isCertificationRequired: false,
+      },
+    });
+    expect(createRole.status()).toBe(201);
+    const jobRoleId = (await createRole.json()).jobRoleId as number;
+    jobRolesToCleanup.add(jobRoleId);
+
+    // 2. Create the link (POST /employeejobroles)
+    const assignedDate = new Date().toISOString().slice(0, 10);
+    const createEJR = await request.post(`${API_URL}/employeejobroles`, {
+      headers: authHeaders(adminToken),
+      data: {
+        employeeId: employeeEmployeeId,
+        jobRoleId: jobRoleId,
+        assignedDate: assignedDate,
+        proficiencyLevel: 'Junior',
+      },
+    });
+    expect(createEJR.status()).toBe(200);
+    const ejr = await createEJR.json();
+    const ejrId = ejr.employeeJobRoleId;
+    expect(ejrId).toBeDefined();
+    employeeJobRolesToCleanup.add(ejrId);
+
+    // 3. Get the link by ID (GET /employeejobroles/{id})
+    const getResponse = await request.get(`${API_URL}/employeejobroles/${ejrId}`, {
+      headers: authHeaders(adminToken),
+    });
+    expect(getResponse.status()).toBe(200);
+    const fetchedEJR = await getResponse.json();
+    expect(fetchedEJR.employeeJobRoleId).toBe(ejrId);
+    expect(fetchedEJR.proficiencyLevel).toBe('Junior');
+
+    // 4. Update the link (PUT /employeejobroles/{id})
+    const updateResponse = await request.put(`${API_URL}/employeejobroles/${ejrId}`, {
+      headers: authHeaders(adminToken),
+      data: {
+        employeeId: employeeEmployeeId,
+        jobRoleId: jobRoleId,
+        assignedDate: assignedDate,
+        proficiencyLevel: 'Senior',
+      },
+    });
+    expect(updateResponse.status()).toBe(200);
+    const updatedEJR = await updateResponse.json();
+    expect(updatedEJR.proficiencyLevel).toBe('Senior');
+
+    // Verify the update via GET
+    const verifyUpdate = await request.get(`${API_URL}/employeejobroles/${ejrId}`, {
+      headers: authHeaders(adminToken),
+    });
+    expect(verifyUpdate.status()).toBe(200);
+    expect((await verifyUpdate.json()).proficiencyLevel).toBe('Senior');
+
+    // 5. Delete the link (DELETE /employeejobroles/{id})
+    const deleteResponse = await request.delete(`${API_URL}/employeejobroles/${ejrId}`, {
+      headers: authHeaders(adminToken),
+    });
+    expect(deleteResponse.status()).toBe(200); // Controller returns void, which might be 200 or 204. Playwright expect(status).toBe(200) works if it's 200.
+
+    // 6. Verify deletion (GET /employeejobroles/{id} should return 404 or similar)
+    const verifyDelete = await request.get(`${API_URL}/employeejobroles/${ejrId}`, {
+      headers: authHeaders(adminToken),
+    });
+    // In this project, service.getById(id) likely throws an exception that maps to 404 if not found.
+    expect(verifyDelete.status()).toBe(404);
   });
 });
