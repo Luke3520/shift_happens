@@ -2,8 +2,8 @@
 include .env
 export
 
-# Development : DB runs in Docker, app runs locally via Maven
-# Test        : Full stack (DB + app) runs in Docker on separate ports
+# Development : DB runs in Docker, app runs locally via Maven (app on :8080)
+# Test        : Full stack (DB + app) runs in Docker; app also on :8080, DB on its own port
 
 # ──────────────────────────────────────────────────────────────
 # Development
@@ -18,13 +18,9 @@ dev:
 dev-db:
 	docker compose up -d --wait db
 
-## Run the frontend pointed at the dev backend (port 8080)
+## Run the frontend (proxies /api to the backend on :8080)
 dev-frontend:
 	cd frontend && npm run dev:prod
-
-## Run the frontend pointed at the test backend (port 8081)
-test-frontend:
-	cd frontend && npm run dev:test
 
 ## Run the Spring Boot app locally (dev DB must already be running)
 dev-app:
@@ -91,7 +87,7 @@ coverage:
 	@open target/site/jacoco/index.html
 
 # ──────────────────────────────────────────────────────────────
-# Test Environment (full Docker stack — DB on 3309, app on 8081)
+# Test Environment (full Docker stack — DB on 3309, app on 8080)
 # ──────────────────────────────────────────────────────────────
 
 ## Start the full test stack (DB + app) in the background
@@ -117,8 +113,8 @@ test-env-logs:
 
 # ──────────────────────────────────────────────────────────────
 # Frontend tests (Playwright) — needs a running backend.
-# Defaults to the dev backend on :8080 (start it with `make dev`). For the
-# isolated test stack: `make test-env-up`, then API_URL=http://localhost:8081.
+# The backend serves on :8080 whether started with `make dev` (Maven) or the
+# Docker test stack (`make test-env-up`), so the default below covers both.
 # Vite proxies /api -> $(API_URL) and the specs read API_URL, so one var points
 # both the app and the tests at the same backend.
 # BASE_URL uses localhost (not 127.0.0.1) so Playwright's dev-server readiness

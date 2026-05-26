@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { check } from 'k6';
 
-export const BASE_URL = 'http://localhost:8081';
+export const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
 
 function login(email, password) {
   const res = http.post(
