@@ -1,7 +1,5 @@
 package dk.ek.shift_happens.shiftapproval;
 
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -18,7 +16,6 @@ import dk.ek.shift_happens.auth.CustomUserDetailsService;
 import dk.ek.shift_happens.auth.JwtService;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -154,27 +151,17 @@ class ShiftApprovalControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMINISTRATOR")
-    void updateUnknownIdRaisesUnhandledNoSuchElement() throws Exception {
-        // KNOWN GAP: updateShiftApproval calls findById(id).orElseThrow() with no argument, which
-        // raises a NoSuchElementException. ShiftApprovalExceptionHandler maps only
-        // IllegalArgumentException and ResponseStatusException, so this exception is unhandled — in
-        // production it surfaces to the client as HTTP 500 (MockMvc re-throws it rather than
-        // rendering the 500). This test pins the current behaviour; see the summary for the
-        // suggested fix (map the missing id to a ResponseStatusException(404)).
+    void updateUnknownIdReturns404() throws Exception {
+        // updateShiftApproval maps a missing id to ResponseStatusException(404), which
+        // ShiftApprovalExceptionHandler renders as a clean 404 (rather than leaking an unhandled
+        // NoSuchElementException).
         when(shiftApprovalRepository.findById(999)).thenReturn(Optional.empty());
 
-        Throwable thrown = assertThrows(
-                Throwable.class,
-                () -> mockMvc.perform(put("/shiftapprovals/999")
+        mockMvc.perform(put("/shiftapprovals/999")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"decision\":\"Approved\"}")));
-
-        Throwable root = thrown;
-        while (root.getCause() != null && root.getCause() != root) {
-            root = root.getCause();
-        }
-        assertInstanceOf(NoSuchElementException.class, root);
+                        .content("{\"decision\":\"Approved\"}"))
+                .andExpect(status().isNotFound());
     }
 
     // ── Delete ───────────────────────────────────────────────────────────────

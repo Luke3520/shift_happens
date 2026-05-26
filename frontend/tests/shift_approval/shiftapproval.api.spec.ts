@@ -198,20 +198,14 @@ test.describe.serial('Shift Approval API', () => {
 
   // ── Negative ────────────────────────────────────────────────────────────────
 
-  test('PUT on an unknown id is mishandled — neither a clean 404 nor success (documents a bug)', async ({
-    request,
-  }) => {
-    // KNOWN GAP: updateShiftApproval does findById(id).orElseThrow() (an unmapped
-    // NoSuchElementException). Through the full security chain this unhandled exception surfaces as
-    // 401 — the internal error re-dispatch runs unauthenticated — rather than the raw 500 a plain
-    // servlet context returns, and never the clean 404 it should be. We pin "not 404, not success"
-    // so the suite is robust to which of the two failure modes the runtime produces.
+  test('PUT on an unknown id returns 404', async ({ request }) => {
+    // updateShiftApproval maps a missing id to a 404 (previously this leaked as a masked 401/500
+    // from an unhandled NoSuchElementException).
     const res = await request.put(`${API_URL}/shiftapprovals/999999999`, {
       headers: authHeaders(adminToken),
       data: { decision: 'Approved' },
     });
-    expect([401, 500]).toContain(res.status());
-    expect(res.status()).not.toBe(404);
+    expect(res.status()).toBe(404);
   });
 
   test('GET is forbidden for an EMPLOYEE token (403)', async ({ request }) => {

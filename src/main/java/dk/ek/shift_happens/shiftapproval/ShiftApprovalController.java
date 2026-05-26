@@ -3,8 +3,10 @@ package dk.ek.shift_happens.shiftapproval;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/shiftapprovals")
@@ -35,7 +37,10 @@ public class ShiftApprovalController {
     @PreAuthorize("hasAnyRole('ADMINISTRATOR','MANAGER')")
     public ShiftApproval updateShiftApproval(
             @PathVariable Integer id, @RequestBody ShiftApproval shiftApprovalDetails) {
-        ShiftApproval shiftApproval = this.shiftApprovalRepository.findById(id).orElseThrow();
+        ShiftApproval shiftApproval = this.shiftApprovalRepository
+                .findById(id)
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Shift approval not found with id " + id));
         shiftApproval.setShiftAssignmentId(shiftApprovalDetails.getShiftAssignmentId());
         shiftApproval.setApproverEmployeeId(shiftApprovalDetails.getApproverEmployeeId());
         shiftApproval.setDecision(shiftApprovalDetails.getDecision());
