@@ -7,7 +7,8 @@ import dotenv from 'dotenv';
  */
 dotenv.config();
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
+const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:5173';
+const HOST = new URL(BASE_URL).hostname;
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -36,9 +37,10 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
  webServer: [
     {
-      command: 'npm run dev',
+      command: `npm run dev -- --host ${HOST}`,
       url: BASE_URL,
       reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
       stdout: 'pipe',
       stderr: 'pipe',
     },

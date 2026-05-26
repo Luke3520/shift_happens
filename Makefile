@@ -1,6 +1,18 @@
 # Load .env variables
 include .env
 export
+# Windows-compatible command wrappers
+ifeq ($(OS),Windows_NT)
+MVNW := ./mvnw.cmd
+OPEN := cmd /c start ""
+TEST_DB_ENV := set "DB_URL=jdbc:mysql://localhost:3309/shift_happens?serverTimezone=UTC" &&
+else
+MVNW := ./mvnw
+OPEN := open
+TEST_DB_ENV := DB_URL=jdbc:mysql://localhost:3309/shift_happens?serverTimezone=UTC
+endif
+
+.PHONY: dev dev-db dev-frontend test-frontend dev-app dev-reset dev-down dev-clean dev-logs dev-shell verify lint lint-check test test-env-test test-unit test-one coverage test-env-up test-env-db test-env-down test-env-reset test-env-logs fe-test-install fe-test fe-test-api fe-test-e2e fe-test-one fe-test-headed fe-test-ui fe-test-report perf-smoke perf perf-one backup restore
 
 # Development : DB runs in Docker, app runs locally via Maven
 # Test        : Full stack (DB + app) runs in Docker on separate ports
@@ -12,7 +24,7 @@ export
 ## Start dev DB + run the Spring Boot app locally
 dev:
 	docker compose up -d --wait db
-	./mvnw spring-boot:run
+	$(MVNW) spring-boot:run
 
 ## Start dev DB in the background only
 dev-db:
@@ -28,7 +40,7 @@ test-frontend:
 
 ## Run the Spring Boot app locally (dev DB must already be running)
 dev-app:
-	./mvnw spring-boot:run
+	$(MVNW) spring-boot:run
 
 ## Wipe the dev DB volume and restart fresh (re-runs all init scripts)
 dev-reset:
@@ -63,32 +75,32 @@ verify:
 
 ## Auto-fix formatting with Spotless (Palantir Java Format)
 lint:
-	./mvnw spotless:apply
+	$(MVNW) spotless:apply
 
 ## Check formatting without making changes
 lint-check:
-	./mvnw spotless:check
+	$(MVNW) spotless:check
 
 ## Run all tests against the dev DB
-test:
-	./mvnw test
+test: dev-db
+	$(MVNW) test
 
 ## Run all tests against the isolated test environment (port 3309)
 test-env-test:
-	DB_URL=jdbc:mysql://localhost:3309/shift_happens?serverTimezone=UTC ./mvnw test
+	$(TEST_DB_ENV) $(MVNW) test
 
-## Run only the blackbox unit tests (no Spring context, no DB needed)
+## Run all Java unit tests in src/test/java
 test-unit:
-	./mvnw test -Dtest='EmployeeServiceTest,ShiftServiceTest,ShiftAssignmentServiceTest,ShiftSwapApprovalServiceTest,JobRoleServiceTest'
+	$(MVNW) test "-Dtest=**/*Test.java"
 
 ## Run a single test class. Usage: make test-one CLASS=EmployeeServiceTest
 test-one:
-	./mvnw test -Dtest=$(CLASS)
+	$(MVNW) test -Dtest=$(CLASS)
 
 ## Run tests + open JaCoCo coverage report
-coverage:
-	./mvnw test
-	@open target/site/jacoco/index.html
+coverage: dev-db
+	$(MVNW) test
+	@$(OPEN) target/site/jacoco/index.html
 
 # ──────────────────────────────────────────────────────────────
 # Test Environment (full Docker stack — DB on 3309, app on 8081)
