@@ -13,7 +13,14 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { API_URL, login, authHeaders, futureShiftWindow, type LoginResponse } from '../pages/helper/api-helpers';
+import {
+  API_URL,
+  login,
+  authHeaders,
+  futureShiftWindow,
+  randomLetters,
+  type LoginResponse,
+} from '../pages/helper/api-helpers';
 import { seedAuthState } from '../pages/helper/browser-auth';
 import { ShiftAssignmentPage } from '../pages/ShiftAssignmentPage';
 
@@ -35,7 +42,9 @@ test.describe.serial('Shift Assignment E2E', () => {
     expect(adminSession.roleName).toBe('Administrator');
 
     const suffix = Date.now().toString(36);
-    const lastName = `Uitest${suffix}`;
+    // Name fields are letters-only, so keep the digit-bearing suffix out of the name; use random
+    // letters for uniqueness there and the suffix only in the email/employeeNumber.
+    const lastName = `Uitest${randomLetters(6)}`;
     employeeFullName = `Asgn ${lastName}`;
     const email = `sa.e2e.${suffix}@shifthappens.dk`;
 
