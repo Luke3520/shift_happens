@@ -98,6 +98,12 @@ public class SecurityConfig {
                         .hasRole("ADMINISTRATOR")
 
                         // Write operations: admin and manager can create/update/delete
+                        .requestMatchers(HttpMethod.POST, "/employeecontracts", "/employeecontracts/**")
+                        .hasAnyRole("ADMINISTRATOR", "MANAGER")
+                        .requestMatchers(HttpMethod.PUT, "/employeecontracts", "/employeecontracts/**")
+                        .hasAnyRole("ADMINISTRATOR", "MANAGER")
+                        .requestMatchers(HttpMethod.DELETE, "/employeecontracts", "/employeecontracts/**")
+                        .hasAnyRole("ADMINISTRATOR", "MANAGER")
                         .requestMatchers(HttpMethod.POST, "/**")
                         .hasAnyRole("ADMINISTRATOR", "MANAGER")
                         .requestMatchers(HttpMethod.PATCH, "/**")
