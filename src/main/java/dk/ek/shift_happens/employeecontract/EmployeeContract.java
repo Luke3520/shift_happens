@@ -1,6 +1,5 @@
 package dk.ek.shift_happens.employeecontract;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
