@@ -12,7 +12,28 @@ OPEN := open
 TEST_DB_ENV := DB_URL=jdbc:mysql://localhost:3309/shift_happens?serverTimezone=UTC
 endif
 
-.PHONY: dev dev-db dev-frontend test-frontend dev-app dev-reset dev-down dev-clean dev-logs dev-shell verify lint lint-check test test-env-test test-unit test-one coverage test-env-up test-env-db test-env-down test-env-reset test-env-logs fe-test-install fe-test fe-test-api fe-test-e2e fe-test-one fe-test-headed fe-test-ui fe-test-report fe-lint fe-lint-fix perf-smoke perf perf-one backup restore
+
+.PHONY: dev dev-db dev-frontend test-frontend dev-app dev-reset dev-down dev-clean dev-logs dev-shell verify lint lint-check test test-env-test test-unit test-one coverage test-env-up test-env-db test-env-down test-env-reset test-env-logs fe-test-install fe-test fe-test-api fe-test-e2e fe-test-one fe-test-headed fe-test-ui fe-test-report perf-smoke perf perf-one backup restore all all-tests
+
+# ──────────────────────────────────────────────────────────────
+# Orchestration
+# ──────────────────────────────────────────────────────────────
+
+## Start full stack (DB + backend + frontend)
+all:
+	@echo "Starting full stack with Docker Compose..."
+	docker compose up --build -d --wait
+	@echo "Starting frontend..."
+	cd frontend && npm run dev
+
+all-tests:
+	@echo "Starting full stack for tests..."
+	docker compose up --build -d --wait
+	@echo "Running backend tests..."
+	$(MVNW) test
+	@echo "Running frontend tests..."
+	cd frontend && npx playwright test
+	@echo "Stopping stack..."
 
 # Development : DB runs in Docker, app runs locally via Maven
 # Test        : Full stack (DB + app) runs in Docker on separate ports

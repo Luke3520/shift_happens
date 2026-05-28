@@ -169,9 +169,9 @@ test.describe('Leave API', () => {
     // 4. Get by Request ID (GET /request/{id})
     const getByReqRes = await request.get(`${api_url}/leaveapprovals/request/${reqId}`, { headers: authHeader() });
     expect(getByReqRes.status()).toBe(200);
-    const approvals = await getByReqRes.json();
+    const approvals: { leaveApprovalId: number }[] = await getByReqRes.json();
     expect(Array.isArray(approvals)).toBeTruthy();
-    expect(approvals.some((a: any) => a.leaveApprovalId === appId)).toBeTruthy();
+    expect(approvals.some((a) => a.leaveApprovalId === appId)).toBeTruthy();
 
     // 5. Update Approval (PUT)
     const updateRes = await request.put(`${api_url}/leaveapprovals/${appId}`, {
