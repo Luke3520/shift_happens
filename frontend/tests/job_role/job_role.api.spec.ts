@@ -618,9 +618,9 @@ test.describe.serial('Job Role API', () => {
       headers: authHeaders(adminToken),
     });
     expect(getAllResponse.status()).toBe(200);
-    const allLinks = await getAllResponse.json();
+    const allLinks: { shiftRequiredJobRoleId: number }[] = await getAllResponse.json();
     expect(Array.isArray(allLinks)).toBe(true);
-    expect(allLinks.some((l: any) => l.shiftRequiredJobRoleId === srjrId)).toBe(true);
+    expect(allLinks.some((l) => l.shiftRequiredJobRoleId === srjrId)).toBe(true);
 
     // 4. Get the link by ID (GET /shiftrequiredjobroles/{id})
     const getResponse = await request.get(`${API_URL}/shiftrequiredjobroles/${srjrId}`, {

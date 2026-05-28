@@ -27,7 +27,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON \`${MYSQL_DATABASE}\`.employee_contract 
 GRANT SELECT, INSERT, UPDATE, DELETE ON \`${MYSQL_DATABASE}\`.employee_job_role TO app_crud_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON \`${MYSQL_DATABASE}\`.job_role TO app_crud_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON \`${MYSQL_DATABASE}\`.leave_approval TO app_crud_role;
-GRANT SELECT, INSERT ON \`${MYSQL_DATABASE}\`.leave_ledger TO app_crud_role;
+GRANT SELECT, INSERT, UPDATE ON \`${MYSQL_DATABASE}\`.leave_ledger TO app_crud_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON \`${MYSQL_DATABASE}\`.leave_request TO app_crud_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON \`${MYSQL_DATABASE}\`.leave_type TO app_crud_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON \`${MYSQL_DATABASE}\`.shift TO app_crud_role;

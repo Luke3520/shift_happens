@@ -48,9 +48,9 @@ test.describe('WorkLocation API', () => {
     // 2. Read All (GET)
     const getAllRes = await request.get(`${api_url}/worklocations`, { headers: authHeader() });
     expect(getAllRes.status()).toBe(200);
-    const allLocations = await getAllRes.json();
+    const allLocations: { workLocationId: number }[] = await getAllRes.json();
     expect(Array.isArray(allLocations)).toBe(true);
-    expect(allLocations.some((wl: any) => wl.workLocationId === locationId)).toBe(true);
+    expect(allLocations.some((wl) => wl.workLocationId === locationId)).toBe(true);
 
     // 3. Read by ID (GET)
     const getByIdRes = await request.get(`${api_url}/worklocations/${locationId}`, { headers: authHeader() });
