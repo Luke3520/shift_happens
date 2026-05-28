@@ -12,7 +12,7 @@ OPEN := open
 TEST_DB_ENV := DB_URL=jdbc:mysql://localhost:3309/shift_happens?serverTimezone=UTC
 endif
 
-.PHONY: dev dev-db dev-frontend test-frontend dev-app dev-reset dev-down dev-clean dev-logs dev-shell verify lint lint-check test test-env-test test-unit test-one coverage test-env-up test-env-db test-env-down test-env-reset test-env-logs fe-test-install fe-test fe-test-api fe-test-e2e fe-test-one fe-test-headed fe-test-ui fe-test-report perf-smoke perf perf-one backup restore
+.PHONY: dev dev-db dev-frontend test-frontend dev-app dev-reset dev-down dev-clean dev-logs dev-shell verify lint lint-check test test-env-test test-unit test-one coverage test-env-up test-env-db test-env-down test-env-reset test-env-logs fe-test-install fe-test fe-test-api fe-test-e2e fe-test-one fe-test-headed fe-test-ui fe-test-report fe-lint fe-lint-fix perf-smoke perf perf-one backup restore
 
 # Development : DB runs in Docker, app runs locally via Maven
 # Test        : Full stack (DB + app) runs in Docker on separate ports
@@ -169,6 +169,14 @@ fe-test-ui:
 ## Open the last Playwright HTML report
 fe-test-report:
 	cd frontend && npx playwright show-report
+
+## Check frontend linting
+fe-lint:
+	cd frontend && npm run lint
+
+## Auto-fix frontend lint violations
+fe-lint-fix:
+	cd frontend && npm run lint:fix
 
 # ──────────────────────────────────────────────────────────────
 # Performance (run against test env — start with make test-env-up first)

@@ -4,13 +4,11 @@ import { buildEmployeePayload } from '../pages/helper/employee-helpers';
 
 test.describe('ShiftSwap Extra API', () => {
   let adminToken: string;
-  let adminEmployeeId: number;
   const api_url = API_URL;
 
   test.beforeAll(async ({ request }) => {
     const loginResponse = await login(request, DEFAULT_ADMIN_EMAIL, DEFAULT_PASSWORD);
     adminToken = loginResponse.token;
-    adminEmployeeId = loginResponse.employeeId;
   });
 
   function authHeader() {
@@ -106,9 +104,8 @@ test.describe('ShiftSwap Extra API', () => {
       // 2. Perform the actual PUT update
       // Note: swapStatus cannot stay the same (backend rejects same-status transitions),
       // so we explicitly set a new status and update the reason.
-      const { swapStatus: _ignored, ...swapWithoutStatus } = swap;
       const updatePayload = {
-        ...swapWithoutStatus,
+        ...swap,
         reason: 'Testing PUT update - UPDATED',
         swapStatus: 'Approved'
       };
