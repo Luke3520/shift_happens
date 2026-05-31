@@ -3,7 +3,7 @@ include .env
 export
 # Windows-compatible command wrappers
 ifeq ($(OS),Windows_NT)
-MVNW := ./mvnw.cmd
+MVNW := mvnw.cmd
 OPEN := cmd /c start ""
 TEST_DB_ENV := set "DB_URL=jdbc:mysql://localhost:3309/shift_happens?serverTimezone=UTC" &&
 else
